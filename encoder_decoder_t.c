@@ -3,6 +3,7 @@
 #define SYMBOLS_FILE "b64_characters.txt"
 #define GROUP_QTY 6
 #define BYTE_SZ 8
+#define BUFF_SZ 2
 
 bool init_encdec(EncDec_t *self, char *fname_in, char *fname_out){
     self->characters = fopen(SYMBOLS_FILE, "r+");
@@ -17,6 +18,15 @@ char encode(EncDec_t *self, char letter_index){
     fseek(self->characters, index, SEEK_SET);
     fread(&encoded_letter, sizeof(char), 1, self->characters);
     return encoded_letter;
+}
+
+void shift_left(char *array, size_t size, int shift_count){
+    for(int i = 0; i < size; ++i){
+        array[i] = array[i] << shift_count;
+        if (i != (size - 1)){
+            array[i] = array[i] | (array[i+1] >> (BYTE_SZ - shift_count));
+        }
+    }
 }
 
 void encode_text(EncDec_t *self){
@@ -35,15 +45,15 @@ void encode_text(EncDec_t *self){
     while(!feof(text_file)){
         bits_to_read = GROUP_QTY - buff2_count;
         if(bits_to_read <= 0){
-            (*buffer) = (*buffer) << GROUP_QTY;
+            shift_left(buffer, BUFF_SZ, GROUP_QTY);
             //here buff1 contains index to match to a character of base64!
             //encoded_letter = encode(self, *buffer);
             buff2_count -= GROUP_QTY;
             //memset(&buffer, 0, sizeof(char));
         }else{
-            (*buffer) = (*buffer) << (GROUP_QTY - bits_to_read);
+            shift_left(buffer, BUFF_SZ, GROUP_QTY - bits_to_read);
             buff2_count = fread(buffer + 1, sizeof(char), 1, text_file)* BYTE_SZ;
-            (*buffer) = (*buffer) << bits_to_read;
+            shift_left(buffer, BUFF_SZ, bits_to_read);
             //here buff1 contains index to match to a character of base64!
             //encoded_letter = encode(self, *buffer);
             //memset(&buffer, 0, sizeof(char));

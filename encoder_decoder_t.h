@@ -17,4 +17,7 @@ void decode_text(EncDec_t *self);
 
 void encode_text(EncDec_t *self);
 
+//TODO:sacar esto, solo es para una prueba:
+void shift_left(char *array, size_t size, int shift_count);
+
 #endif //ENCDEC_H
