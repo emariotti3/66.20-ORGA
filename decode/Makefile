@@ -1,5 +1,4 @@
-
-CFLAGS = -std=c99 -Wall
+CFLAGS = -std=c99
 TEST_CFLAGS = -Ideps
 
 default: test
@@ -12,3 +11,4 @@ clean:
 	rm -f *.o test 
 
 .PHONY: default clean
+
