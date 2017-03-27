@@ -7,11 +7,11 @@
 
 typedef struct encoder_decoder{
     FILE *characters;
-    char *input_file;
-    char *output_file;
+    FILE *input_file;
+    FILE *output_file;
 } EncDec_t;
 
-bool init_encdec(EncDec_t *self, char *fname_in, char *fname_out);
+bool init_encdec(EncDec_t *self, FILE *input, FILE *output);
 
 void decode_text(EncDec_t *self);
 
