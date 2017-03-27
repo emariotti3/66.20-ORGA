@@ -3,12 +3,18 @@
 #include <string.h>
 #include <stdbool.h>
 
-bool are_equals(unsigned char* esperado, unsigned char* obtenido,int len);
-unsigned char *
-b64_decode(const char *src, size_t len); 
+bool are_equals(unsigned char* esperado, const char* obtenido,int len);
+unsigned char* b64_decode(const char *src, size_t len); 
 
-int
-main (void) {
+bool are_equals(unsigned char* esperado, const char* obtenido,int len){
+	int i;
+	for (i=0; i<len; i++)
+		if ( !( (esperado[i] == obtenido[i]) ) )
+			return false;
+	return true; 
+}
+
+int main (void) {
 
   // Pruebas decode
   
@@ -74,10 +80,5 @@ main (void) {
   return 0;
 }
 
-bool are_equals(unsigned char* esperado, unsigned char* obtenido,int len){
-	int i;
-	for (i=0; i<len; i++)
-		if ( !( (esperado[i] == obtenido[i]) ) )
-			return false;
-	return true; 
-}
+
+
