@@ -1,9 +1,14 @@
 #include <string.h>
 #include "encoder_decoder_t.h"
 #define SYMBOLS_FILE "b64_characters.txt"
-#define GROUP_QTY 6
+#define MASK1 0xFC000000
+#define MASK2 0x3F00000
+#define MASK3 0xFC000
+#define MASK4 0x3F00
+#define BYTE_GROUP 3
 #define BYTE_SZ 8
-#define BUFF_SZ 2
+#define GROUP_SZ 6
+#define FILL_CHAR_POS 64
 
 bool init_encdec(EncDec_t *self, char *fname_in, char *fname_out){
     self->characters = fopen(SYMBOLS_FILE, "r+");
@@ -12,21 +17,27 @@ bool init_encdec(EncDec_t *self, char *fname_in, char *fname_out){
     return true;
 }
 
-char encode(EncDec_t *self, char letter_index){
-    int index = atoi(&letter_index);
+char encode(EncDec_t *self, int letter_index){
     char encoded_letter = '\0';
-    fseek(self->characters, index, SEEK_SET);
+    fseek(self->characters, letter_index, SEEK_SET);
     fread(&encoded_letter, sizeof(char), 1, self->characters);
     return encoded_letter;
 }
 
-void shift_left(char *array, size_t size, int shift_count){
-    for(int i = 0; i < size; ++i){
-        array[i] = array[i] << shift_count;
-        if (i != (size - 1)){
-            array[i] = array[i] | (array[i+1] >> (BYTE_SZ - shift_count));
-        }
+bool at_eof(FILE *file_ptr){
+    int pos = ftell(file_ptr);
+    fgetc(file_ptr);
+    bool eof =(fgetc(file_ptr) == EOF);
+    fseek(file_ptr, pos, SEEK_SET);
+    return eof;
+}
+
+int concantenate_binary_to_int(char *characters){
+    int number = 0;
+    for(int i = 0; i < sizeof(int); ++i){
+        number = number | (characters[i] << (sizeof(int) -1 -i)*BYTE_SZ);
     }
+    return number;
 }
 
 void encode_text(EncDec_t *self){
@@ -34,36 +45,27 @@ void encode_text(EncDec_t *self){
     FILE *text_file = fopen(self->input_file, "rb+");
     FILE *encoded_file = fopen(self->output_file, "wb+");
 
-    //Create 16 bit buffer: = [ buff1 | buff2 ]
-    char buffer[2];
-    memset(&buffer, 0, 2*sizeof(char));
+    //TODO:esto se podría flexibilizar mas:
+    int index = 0, shift_count = 0, read_byte = 0;
+    int group_qty = (BYTE_GROUP * BYTE_SZ) / GROUP_SZ;
+    char encoded_chars[group_qty + 1], read_letters[sizeof(int) + 1];
+    int masks[] = {MASK1, MASK2, MASK3, MASK4};
 
-    int bits_to_read = 0, buff2_count = 0; //buff1_count = 0, total_encoded = 0;
-    buff2_count += fread(buffer + 1, sizeof(char), 1, text_file) * BYTE_SZ;
-    char encoded_letter = '\0';
-
-    while(!feof(text_file)){
-        bits_to_read = GROUP_QTY - buff2_count;
-        if(bits_to_read <= 0){
-            shift_left(buffer, BUFF_SZ, GROUP_QTY);
-            //here buff1 contains index to match to a character of base64!
-            //encoded_letter = encode(self, *buffer);
-            buff2_count -= GROUP_QTY;
-            //memset(&buffer, 0, sizeof(char));
-        }else{
-            shift_left(buffer, BUFF_SZ, GROUP_QTY - bits_to_read);
-            buff2_count = fread(buffer + 1, sizeof(char), 1, text_file)* BYTE_SZ;
-            shift_left(buffer, BUFF_SZ, bits_to_read);
-            //here buff1 contains index to match to a character of base64!
-            //encoded_letter = encode(self, *buffer);
-            //memset(&buffer, 0, sizeof(char));
-            buff2_count -= bits_to_read;
+    while(!at_eof(text_file)){
+        memset(&read_letters, '\0', sizeof(int) + 1);
+        memset(&encoded_chars,'\0',(group_qty + 1)*sizeof(char));
+        fread(read_letters, sizeof(char), BYTE_GROUP, text_file);
+        read_byte = concantenate_binary_to_int(read_letters);
+        for (int j = 0; j < group_qty; ++j){
+            shift_count = (group_qty - j - 1)*GROUP_SZ + BYTE_SZ;
+            index = (read_byte & masks[j]) >> shift_count;
+            //Si index es 0, entonces le asignamos la posicion
+            //del caracter de relleno('=' en este caso).
+            index = (index != 0)? index : FILL_CHAR_POS;
+            encoded_chars[j] = encode(self, index);
         }
-        encoded_letter = encode(self, *buffer);
-        memset(&buffer, 0, sizeof(char));
-        fwrite(&encoded_letter, sizeof(char), 1, encoded_file);
+        fwrite(encoded_chars, sizeof(char), group_qty, encoded_file);
     }
-
     fclose(encoded_file);
     fclose(text_file);
 }
