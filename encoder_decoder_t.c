@@ -10,10 +10,10 @@
 #define GROUP_SZ 6
 #define FILL_CHAR_POS 64
 
-bool init_encdec(EncDec_t *self, char *fname_in, char *fname_out){
+bool init_encdec(EncDec_t *self, FILE *input, FILE *output){
     self->characters = fopen(SYMBOLS_FILE, "r+");
-    self->input_file = fname_in;
-    self->output_file = fname_out;
+    self->input_file = input;
+    self->output_file = output;
     return true;
 }
 
@@ -41,9 +41,6 @@ int concantenate_binary_to_int(char *characters){
 }
 
 void encode_text(EncDec_t *self){
-    //SI NOS DAN UN ARCHIVO, SI NO HAY QUE USAR STDOUT/STDIN
-    FILE *text_file = fopen(self->input_file, "rb+");
-    FILE *encoded_file = fopen(self->output_file, "wb+");
 
     //TODO:esto se podría flexibilizar mas:
     int index = 0, shift_count = 0, read_byte = 0;
@@ -51,10 +48,10 @@ void encode_text(EncDec_t *self){
     char encoded_chars[group_qty + 1], read_letters[sizeof(int) + 1];
     int masks[] = {MASK1, MASK2, MASK3, MASK4};
 
-    while(!at_eof(text_file)){
+    while(!at_eof(self->input_file)){
         memset(&read_letters, '\0', sizeof(int) + 1);
         memset(&encoded_chars,'\0',(group_qty + 1)*sizeof(char));
-        fread(read_letters, sizeof(char), BYTE_GROUP, text_file);
+        fread(read_letters, sizeof(char), BYTE_GROUP, self->input_file);
         read_byte = concantenate_binary_to_int(read_letters);
         for (int j = 0; j < group_qty; ++j){
             shift_count = (group_qty - j - 1)*GROUP_SZ + BYTE_SZ;
@@ -64,16 +61,10 @@ void encode_text(EncDec_t *self){
             index = (index != 0)? index : FILL_CHAR_POS;
             encoded_chars[j] = encode(self, index);
         }
-        fwrite(encoded_chars, sizeof(char), group_qty, encoded_file);
+        fwrite(encoded_chars, sizeof(char), group_qty, self->output_file);
     }
-    fclose(encoded_file);
-    fclose(text_file);
 }
 
 void decode_text(EncDec_t *self){
     //SI NOS DAN UN ARCHIVO, SI NO HAY QUE USAR STDOUT/STDIN
-    FILE *encoded_file = fopen(self->input_file, "rb+");
-    FILE *text_file = fopen(self->output_file, "wb+");
-    fclose(encoded_file);
-    fclose(text_file);
 }
