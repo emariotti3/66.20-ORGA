@@ -30,4 +30,12 @@ int decode_text(EncDec_t *self);
 //un código de error.
 int encode_text(EncDec_t *self);
 
+//Recibe un puntero a FILE y reemplaza el archivo de
+//entrada actual por el recibido.
+void set_input(EncDec_t *self, FILE *input);
+
+//Recibe un puntero a FILE y reemplaza el archivo de
+//salida actual por el recibido.
+void set_output(EncDec_t *self, FILE *output);
+
 #endif //ENCDEC_H

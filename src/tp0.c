@@ -94,7 +94,6 @@ int menu(int argc, char** argv, FILE** input, FILE** output){
             }
         }
     }
-
     return exit;
 }
 
