@@ -103,12 +103,18 @@ int main(int argc, char* argv[]){
     FILE* input = stdin;
     FILE* output = stdout;
 
-    int code = menu(argc, argv, &input, &output);
-
+    int action_code = menu(argc, argv, &input, &output);
     init_encdec(&encdec, input, output);
-    encode_text(&encdec);
+
+    switch (action_code) {
+        case ENCODE:
+            encode_text(&encdec);
+            break;
+        case DECODE:
+            decode_text(&encdec);
+            break;
+    }
 
     free_mem(input, output);
-
     return EXIT_SUCCESS;
 }
