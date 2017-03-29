@@ -63,21 +63,33 @@ int concantenate_binary_to_int(char *characters){
 int encode_text(EncDec_t *self){
     //TODO:esto se podría flexibilizar mas:
     int index = 0, shift_count = 0, read_byte = 0;
+    //group_qty: la cantidad de grupos de 6 bits que puedo formar
+    //con los bytes que leo:
     int group_qty = (BYTE_GROUP * BYTE_SZ) / GROUP_SZ;
     char encoded_chars[group_qty + 1], read_letters[sizeof(int) + 1];
+
+    //Array de mascaras a utilizar para obtener los
+    //bits que me interesan.
     int masks[] = {MASK1, MASK2, MASK3, MASK4};
 
     while(!at_eof(self->input_file)){
         memset(&read_letters, '\0', sizeof(int) + 1);
         memset(&encoded_chars,'\0',(group_qty + 1)*sizeof(char));
+        //Leo 3 bytes del archivo de entrada y los guardo en read_letters
         fread(read_letters, sizeof(char), BYTE_GROUP, self->input_file);
+        //Concateno los bits de los 3 bytes leidos en un int (32 bits)
         read_byte = concantenate_binary_to_int(read_letters);
+        //Ahora para operaciones logicas con las mascaras
+        //y shifteo de bits para poder obtener los grupos
+        //de bits que quiero y obtengo un index:
         for (int j = 0; j < group_qty; ++j){
             shift_count = (group_qty - j - 1)*GROUP_SZ + BYTE_SZ;
             index = (read_byte & masks[j]) >> shift_count;
             //Si index es 0, entonces le asignamos la posicion
             //del caracter de relleno('=' en este caso).
             index = (index != 0)? index : FILL_CHAR_POS;
+            //Uso el index para obtener un caracter del
+            //archivo de caracteres posibles:
             encoded_chars[j] = encode(self, index);
         }
         fwrite(encoded_chars, sizeof(char), group_qty, self->output_file);
