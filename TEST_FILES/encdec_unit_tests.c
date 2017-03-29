@@ -33,13 +33,16 @@ void print_test(const char *test_name, bool test_passed){
     printf("PRUEBA %s: %s.\n", test_name, test_passed ? "OK":"ERROR");
 }
 
-void run_test(const char *test_name, EncDec_t *encdec, const char *file_in, const char* file_out){
+
+
+void run_test(const char *test_name, EncDec_t *encdec, const char *file_in, const char* file_out,
+int(*func)(EncDec_t *encdec)){
     FILE *ftest_in = fopen(file_in, "r+"); //input
     FILE *ftest_out = fopen(file_out, "r+"); //resultado esperado
     FILE *ftest_resu = fopen(FOUT, "w+"); //output
     set_input(encdec, ftest_in);
     set_output(encdec, ftest_resu);
-    int success = decode_text(encdec);
+    int success = func(encdec);
 
     print_test(test_name, (success == SUCCESS) && are_equals(ftest_in, ftest_out));
     fclose(ftest_in);
@@ -49,20 +52,20 @@ void run_test(const char *test_name, EncDec_t *encdec, const char *file_in, cons
 
 void pruebas_decodificador(EncDec_t *encdec){
     printf("Pruebas del decodificador: \n \n");
-    run_test("TEXTO1 DECODIFICADO CON SIMBOLOS DE RELLENO", encdec, DEC_TEST1_IN, DEC_TEST1_OUT);
-    run_test("TEXTO2 DECODIFICADO CON SIMBOLOS DE RELLENO", encdec, DEC_TEST2_IN, DEC_TEST2_OUT);
-    run_test("TEXTO3 DECODIFICADO CON SIMBOLOS DE RELLENO", encdec, DEC_TEST3_IN, DEC_TEST3_OUT);
-    run_test("TEXTO4 DE NUMEROS DECODIFICADO", encdec, DEC_TEST4_IN, DEC_TEST4_OUT);
-    run_test("TEXTO5 DE NUMEROS Y LETRAS DECODIFICADO", encdec, DEC_TEST5_IN, DEC_TEST5_OUT);
+    run_test("TEXTO1 DECODIFICADO CON SIMBOLOS DE RELLENO", encdec, DEC_TEST1_IN, DEC_TEST1_OUT, decode_text);
+    run_test("TEXTO2 DECODIFICADO CON SIMBOLOS DE RELLENO", encdec, DEC_TEST2_IN, DEC_TEST2_OUT, decode_text);
+    run_test("TEXTO3 DECODIFICADO CON SIMBOLOS DE RELLENO", encdec, DEC_TEST3_IN, DEC_TEST3_OUT, decode_text);
+    run_test("TEXTO4 DE NUMEROS DECODIFICADO", encdec, DEC_TEST4_IN, DEC_TEST4_OUT, decode_text);
+    run_test("TEXTO5 DE NUMEROS Y LETRAS DECODIFICADO", encdec, DEC_TEST5_IN, DEC_TEST5_OUT, decode_text);
 }
 
 void pruebas_codificador(EncDec_t *encdec){
     printf("Pruebas del codificador: \n \n");
-    run_test("TEXTO1 CODIFICADO CON SIMBOLOS DE RELLENO", encdec, DEC_TEST1_OUT, DEC_TEST1_IN);
-    run_test("TEXTO2 CODIFICADO CON SIMBOLOS DE RELLENO", encdec, DEC_TEST2_OUT, DEC_TEST2_IN);
-    run_test("TEXTO3 CODIFICADO CON SIMBOLOS DE RELLENO", encdec, DEC_TEST3_OUT, DEC_TEST3_IN);
-    run_test("TEXTO4 DE NUMEROS CODIFICADO", encdec, DEC_TEST4_OUT, DEC_TEST4_IN);
-    run_test("TEXTO5 DE NUMEROS Y LETRAS CODIFICADO", encdec, DEC_TEST5_OUT, DEC_TEST5_IN);
+    run_test("TEXTO1 CODIFICADO CON SIMBOLOS DE RELLENO", encdec, DEC_TEST1_OUT, DEC_TEST1_IN, encode_text);
+    run_test("TEXTO2 CODIFICADO CON SIMBOLOS DE RELLENO", encdec, DEC_TEST2_OUT, DEC_TEST2_IN, encode_text);
+    run_test("TEXTO3 CODIFICADO CON SIMBOLOS DE RELLENO", encdec, DEC_TEST3_OUT, DEC_TEST3_IN, encode_text);
+    run_test("TEXTO4 DE NUMEROS CODIFICADO", encdec, DEC_TEST4_OUT, DEC_TEST4_IN, encode_text);
+    run_test("TEXTO5 DE NUMEROS Y LETRAS CODIFICADO", encdec, DEC_TEST5_OUT, DEC_TEST5_IN, encode_text);
 }
 
 int main (void) {
