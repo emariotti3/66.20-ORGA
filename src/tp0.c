@@ -5,17 +5,19 @@
 #define COMPARATOR 0
 #define ENCODE 0
 #define DECODE 1
+#define SHOW_HELP 2
+#define SHOW_VERSION 3
 #define ERROR_ACTION 2
 
 int show_version(){
 
-    printf("Organizacion de Computadoras - TP0\n");
-    printf("Encoder/Decoder Base64 - v0.1\n\n");
+    printf("\nOrganizacion de Computadoras - TP0\n");
+    printf("\nEncoder/Decoder Base64 - v0.1 \n\n");
     printf("Group Members:\n");
     printf("Gonzalez Perez, Ailen\t\tPadron: 97043\n");
     printf("Mariotti, Maria Eugenia\t\tPadron: 96260\n");
-    printf("Raña, Cristian Ezequiel\t\tPadron: 95457\n");
-
+    printf("Raña, Cristian Ezequiel\t\tPadron: 95457\n \n");
+    
     return EXIT_SUCCESS;
 
 }
@@ -28,7 +30,7 @@ int show_help(){
     printf("  tp0 [options]\n\n");
     printf("Options:\n");
     printf("  -V, --version\t\tPrint version and quit.\n");
-    printf("  -h, --help\t\tPrint this information.\n");
+    printf("  -h, --help\t\tPrint this information and quit.\n");
     printf("  -i, --input\t\tLocation of the input file.\n");
     printf("  -o, --output\t\tLocation of the output file.\n");
     printf("  -a, --action\t\tProgram action: encode (default) or decode.\n\n");
@@ -62,12 +64,12 @@ int menu(int argc, char** argv, FILE** input, FILE** output){
     for (int counter = 1; counter < argc; counter++){
 
         if (strcmp(argv[counter],"-h") == COMPARATOR || strcmp(argv[counter],"--help") == COMPARATOR){
-            show_help();
-            return EXIT_SUCCESS;
+            exit = SHOW_HELP;
+            break;
         }
         else if (strcmp(argv[counter],"-V") == COMPARATOR || strcmp(argv[counter],"--version") == COMPARATOR){
-            show_version();
-            return EXIT_SUCCESS;
+            exit = SHOW_VERSION;
+            break;
         }
         else if (strcmp(argv[counter],"-a") == COMPARATOR || strcmp(argv[counter],"--action") == COMPARATOR){
             counter++;
@@ -112,6 +114,12 @@ int main(int argc, char* argv[]){
         case DECODE:
             decode_text(&encdec);
             break;
+        case SHOW_HELP:
+			show_help();
+			break;
+		case SHOW_VERSION:
+			show_version();
+			break;
     }
 
     free_mem(input, output);
