@@ -42,55 +42,54 @@ int show_help(){
 
 int free_mem(FILE* input, FILE* output){
 
-    if (input != stdin){
+    //if (input != stdin){
         fclose(input);
-        printf("Libera INPUT FILE\n");
-    }
+    //    printf("Libera INPUT FILE\n");
+    //}
 
-    if (output != stdout){
+    //if (output != stdout){
         fclose(output);
-        printf("Libera OUTPUT FILE\n");
-    }
+      //  printf("Libera OUTPUT FILE\n");
+    //}
 
     return EXIT_SUCCESS;
 }
 
-int menu(int argc, char** argv, FILE** input, FILE** output){
-
-    int exit = DECODE;
+int menu(int argc, char** argv, FILE *input, FILE *output){
+    int exit = ENCODE;
 
     for (int counter = 1; counter < argc; counter++){
 
-        if (strcmp(argv[counter],"-h") == COMPARATOR || strcmp(argv[counter],"--help") == COMPARATOR){
+        if (strncmp(argv[counter],"-h", strlen("-h")) == COMPARATOR || strncmp(argv[counter],"--help",strlen("--help")) == COMPARATOR){
             show_help();
             return EXIT_SUCCESS;
         }
-        else if (strcmp(argv[counter],"-V") == COMPARATOR || strcmp(argv[counter],"--version") == COMPARATOR){
+        else if (strncmp(argv[counter],"-V", strlen("-V")) == COMPARATOR || strncmp(argv[counter],"--version", strlen("--version")) == COMPARATOR){
             show_version();
             return EXIT_SUCCESS;
         }
-        else if (strcmp(argv[counter],"-a") == COMPARATOR || strcmp(argv[counter],"--action") == COMPARATOR){
+        else if (strncmp(argv[counter],"-a",strlen("-a")) == COMPARATOR || strncmp(argv[counter],"--action",strlen("--action")) == COMPARATOR){
             counter++;
-            if (strcmp(argv[counter],"decode") == COMPARATOR){
+            if (strncmp(argv[counter],"decode", strlen("decode")) == COMPARATOR){
                 exit = DECODE;
             }
-            else if (strcmp(argv[counter],"encode") == COMPARATOR){
+            else if (strncmp(argv[counter],"encode", strlen("encode")) == COMPARATOR){
                 exit = ENCODE;
             }
             else{
                 return ERROR_ACTION;
             }
         }
-        else if (strcmp(argv[counter],"-o") == COMPARATOR || strcmp(argv[counter],"--output") == COMPARATOR){
+        else if (strncmp(argv[counter],"-o",strlen("-o")) == COMPARATOR || strncmp(argv[counter],"--output",strlen("--output")) == COMPARATOR){
             counter++;
-            if (strcmp(argv[counter],"-") != COMPARATOR){
-                *output = fopen(argv[counter],"wb+");
+            if (strncmp(argv[counter],"-",strlen("-")) != COMPARATOR){
+                *output = *fopen(argv[counter],"wb+");
             }
         }
-        else if (strcmp(argv[counter],"-i") == COMPARATOR || strcmp(argv[counter],"--input") == COMPARATOR){
+        else if (strncmp(argv[counter],"-i",strlen("-i")) == COMPARATOR || strncmp(argv[counter],"--input",strlen("--input")) == COMPARATOR){
             counter++;
-            if (strcmp(argv[counter],"-") != COMPARATOR){
-                *input = fopen(argv[counter],"rb+");
+            if (strncmp(argv[counter],"-",strlen("-")) != COMPARATOR){
+                *input = *fopen(argv[counter],"rb+");
             }
         }
     }
@@ -102,7 +101,7 @@ int main(int argc, char* argv[]){
     FILE* input = stdin;
     FILE* output = stdout;
 
-    int action_code = menu(argc, argv, &input, &output);
+    int action_code = menu(argc, argv, input, output);
     init_encdec(&encdec, input, output);
 
     switch (action_code) {

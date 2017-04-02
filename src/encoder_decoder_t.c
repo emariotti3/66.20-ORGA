@@ -14,6 +14,7 @@
 #define ENCODED_GROUP_SZ 4
 #define DECODED_GROUP_SZ 3
 #define SUCCESS 0
+#define END_LINE '\n'
 
 //TODO: además de códigos de error habría que settear un mensaje del error
 //para mostrar por pantalla (strerror)
@@ -42,14 +43,8 @@ char encode(EncDec_t *self, int letter_index){
     return encoded_letter;
 }
 
-bool at_eof(FILE *file_ptr){
-    int pos = ftell(file_ptr), ch = 0;
-    //fgetc(file_ptr);
-    //bool eof =(fgetc(file_ptr) == EOF);
-    ch = fgetc(file_ptr);
-    bool eof = (ch == EOF);
-    fseek(file_ptr, pos, SEEK_SET);
-    return eof;
+bool at_eof(EncDec_t *self, char *str){
+    return (*str == EOF) || ((self->input_file == stdin) && (*str == '\n' || *str == '\0'));
 }
 
 int concantenate_binary_to_int(char *characters){
@@ -66,17 +61,18 @@ int encode_text(EncDec_t *self){
     //group_qty: la cantidad de grupos de 6 bits que puedo formar
     //con los bytes que leo:
     int group_qty = (BYTE_GROUP * BYTE_SZ) / GROUP_SZ;
-    char encoded_chars[group_qty + 1], read_letters[sizeof(int) + 1];
+    char encoded_chars[group_qty + 1], read_letters[sizeof(int)];
 
     //Array de mascaras a utilizar para obtener los
     //bits que me interesan.
     int masks[] = {MASK1, MASK2, MASK3, MASK4};
+    fseek(self->input_file, 0, SEEK_SET);
+    memset(&read_letters, '\0', sizeof(int));
+    memset(&encoded_chars,'\0',(group_qty + 1)*sizeof(char));
 
-    while(!at_eof(self->input_file)){
-        memset(&read_letters, '\0', sizeof(int) + 1);
-        memset(&encoded_chars,'\0',(group_qty + 1)*sizeof(char));
-        //Leo 3 bytes del archivo de entrada y los guardo en read_letters
-        fread(read_letters, sizeof(char), BYTE_GROUP, self->input_file);
+    char *resu = fgets(read_letters, BYTE_GROUP + 1, self->input_file);
+    //Leo 3 bytes del archivo de entrada y los guardo en read_letters
+    while(!at_eof(self, resu)){
         //Concateno los bits de los 3 bytes leidos en un int (32 bits)
         read_byte = concantenate_binary_to_int(read_letters);
         //Ahora para operaciones logicas con las mascaras
@@ -93,6 +89,9 @@ int encode_text(EncDec_t *self){
             encoded_chars[j] = encode(self, index);
         }
         fwrite(encoded_chars, sizeof(char), group_qty, self->output_file);
+        memset(&read_letters, '\0', sizeof(int));
+        memset(&encoded_chars,'\0',(group_qty + 1)*sizeof(char));
+        resu = fgets(read_letters, BYTE_GROUP + 1, self->input_file);
     }
     return SUCCESS;
 }
@@ -124,7 +123,8 @@ int decode_text(EncDec_t *self){
     fseek(self->characters, 0, SEEK_SET);
 
     //Vamos a tomar caracteres mientras no se termine src
-    while (!at_eof(self->input_file)) {
+    //while (!at_eof(self->input_file)) {
+    while (!feof(self->input_file)) {
         //Inicializo el array de caracteres leidos con el caractere
         //de relleno por si no se completa la cantidad de bytes esperados.
         //Esto solo agrega un '\0' al resultado decodificado.
@@ -149,7 +149,8 @@ int decode_text(EncDec_t *self){
                 //en la lista de b64 y guardar su posición.
                 fseek(self->characters, 0, SEEK_SET);
                 bool found_letter_index = false;
-                while (!at_eof(self->characters) && !found_letter_index) {
+                //while (!at_eof(self->characters) && !found_letter_index) {
+                while (!feof(self->characters) && !found_letter_index) {
                     encoded_letter = fgetc(self->characters);
                     found_letter_index = (letters[i] == encoded_letter);
                     if (found_letter_index) {
