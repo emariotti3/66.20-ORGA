@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -288,21 +287,33 @@ int main(int argc, char* argv[]){
 		
 			if (strcmp("-i",argv[i])==0 || strcmp("--input",argv[i])==0 ){ //If -i option is set, we have an input file
 				input = fopen(argv[i+1],"rb+");
+				if (input==NULL){
+					printf("Error de apertura de archivo de entrada. No se puede continuar.\n");
+					return -1;
+				}
 				i++;
 			}
 		
 			if (strcmp("-o",argv[i])==0 || strcmp("--output",argv[i])==0 ){ //If -o option is set, we have an output file
-				output = fopen(argv[i+1],"wb+");
+					output = fopen(argv[i+1],"wb+");
+					if (output==NULL){
+					printf("Error de apertura de archivo de salida. No se puede continuar.\n");
+					return -1;
+				}
 				i++;
 			}
 		
 			if (strcmp("-a",argv[i])==0 || strcmp("--action",argv[i])==0 ){ //Defines if we decode or encode
 				action = argv[i+1];
+				if (strcmp("decode",action) !=0 && strcmp("encode",action) !=0){
+					printf("%s no es una opción válida.\n",action);
+					return -1;
+				}  
 				i++;
 			}
 		}
 		
-		if (showVersion || showHelp){ //-v is a "show and quit" option
+		if (showVersion || showHelp){ //-v and -h "show and quit" options
 			if (input != stdin)
 				fclose(input);
 			if (output != stdout)
