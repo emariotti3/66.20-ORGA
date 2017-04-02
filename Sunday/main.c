@@ -270,8 +270,13 @@ int main(int argc, char* argv[]){
 			}
 		}
 		
-		if (showVersion) //-v is a "show and quit" option
+		if (showVersion){ //-v is a "show and quit" option
+			if (input != stdin)
+				fclose(input);
+			if (output != stdout)
+				fclose(output);
 			return 0; 
+		}
 			
 		char * target = reader(input); //Argument for b64_decode/encode
 		
