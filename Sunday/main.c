@@ -296,7 +296,7 @@ int main(int argc, char* argv[]){
 			return 0; 
 		}
 		
-		char * target = "";
+		char * target;
 		if (input == stdin)
 			gets(target);
 		else
