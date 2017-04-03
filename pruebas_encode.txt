@@ -1,0 +1,5 @@
+echo Cada vez iré sintiendo menos y recordando más, | ./tp0 
+echo pero qué es el recuerdo sino el idioma de los sentimientos, | ./tp0 -a encode
+echo un diccionario de caras y días y perfumes que vuelven como| ./tp0
+echo los verbos y los adjetivos en el discurso.| ./tp0 
+
