@@ -1,8 +1,10 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
+
 #define MAX 200
 
 static const char b64_table[] = {
@@ -49,64 +51,37 @@ int show_help(){
 
 }
 
-char * d_reader(FILE* file){
+char * reader(FILE* miFile){
 	
-	//I initialize a "basic" string
-	char* read = malloc(sizeof(char)*MAX);
-		
-	char buffer[MAX]; 
-	int totalCharacters = 0;
-	int readCharacters = fread(buffer, sizeof(char), MAX, file);
+	long lSize;
+	char *buffer;
 
-	while(readCharacters > 0){
-		//If I read a character, I copy it into 
-		char* appendix = &read[totalCharacters];
-		strcpy(appendix, buffer);
-		read = (char *) realloc(read, sizeof(read) + 1);
-		totalCharacters += readCharacters;
-		readCharacters = fread(file, sizeof(char), MAX,file);
-	}
-	
-	fclose(file);
-	
-	return read;
-	
-}
 
-char * e_reader(FILE* file){
-	
-	//I initialize a "basic" string
-	char* read = malloc(sizeof(char)*MAX);
-		
-	char buffer[MAX]; 
-	int totalCharacters = 0;
-	int readCharacters = fread(buffer, sizeof(char), MAX, file);
+	fseek( miFile , 0L , SEEK_END);
+	lSize = ftell( miFile );
+	rewind( miFile );
 
-	while(readCharacters > 0){
-		//If I read a character, I copy it into 
-		char* appendix = &read[totalCharacters];
-		strcpy(appendix, buffer);
-		read = (char *) realloc(read, sizeof(read) + 1);
-		totalCharacters += readCharacters;
-		readCharacters = fread(file, sizeof(char), MAX,file);
-	}
-	//Eliminar \0
+	/* allocate memory for entire content */
+	buffer = calloc( 1, lSize+1 );
+	if( !buffer ) fclose(miFile),fputs("memory alloc fails",stderr),exit(1);
+
+	/* copy the file into the buffer */
+	if( 1 != fread( buffer , lSize, 1 , miFile) )
+		fclose(miFile),free(buffer),fputs("entire read fails",stderr),exit(1);
 	
-	for(int i = 0; i < strlen(read);i++){
-		if(read[i] == '\n'){
-			for(int j = i; j < strlen(read);j++)
-				read[j] = read[j+1];
+	for(int i = 0; i < strlen(buffer);i++){
+		if(buffer[i] == '\n'){
+			for(int j = i; j < strlen(buffer);j++)
+				buffer[j] = buffer[j+1];
 		}
 	}
 	
-	fclose(file);
-	
-	return read;
+	return buffer;
 	
 }
 
 
-char * b64_decode(const char *src, size_t len) {
+char * b64_decode(char *src, size_t len) {
   int i = 0; //Contadores
   int j = 0; //para los
   int l = 0; //recorridos
@@ -321,18 +296,19 @@ int main(int argc, char* argv[]){
 			return 0; 
 		}
 		
-	
-
+		char * target = "";
+		if (input == stdin)
+			gets(target);
+		else
+			target = reader(input); //Argument for b64_decode/encode
 		
 		char* result; //Where we save the decoded/encoded string
 		
 		if ( strcmp("decode",action) ==0 ){ //If action = decode -> call b64_decode
-			char * target = d_reader(input); //Argument for b64_decode/encode
 			result = b64_decode(target,strlen(target));
 		}
 		
 		else{ //If action = encode -> call b64_encode
-			char * target = e_reader(input);
 			result = b64_encode(target,strlen(target));
 		}
 		
@@ -348,5 +324,6 @@ int main(int argc, char* argv[]){
 			fclose(input); //If it was open, close the input file
 			
 		//free(result);  
+		
 		return 0; //Everything went fine
 }
