@@ -21,7 +21,7 @@ static const char b64_table[] = {
 int show_version(){
 
     printf("\nOrganizacion de Computadoras - TP0\n");
-    printf("\nEncoder/Decoder Base64 - v0.1 \n\n");
+    printf("\nEncoder/Decoder Base64 - v0.3 \n\n");
     printf("Group Members:\n");
     printf("Gonzalez Perez, Ailen\t\tPadron: 97043\n");
     printf("Mariotti, Maria Eugenia\t\tPadron: 96260\n");
@@ -324,7 +324,7 @@ int main(int argc, char* argv[]){
 		if(input != stdin)
 			fclose(input); //If it was open, close the input file
 			
-		//free(result);  
+		free(result);  
 		
 		return 0; //Everything went fine
 }
