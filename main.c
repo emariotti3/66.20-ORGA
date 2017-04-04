@@ -1,8 +1,10 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
+
 #define MAX 200
 
 static const char b64_table[] = {
@@ -19,7 +21,7 @@ static const char b64_table[] = {
 int show_version(){
 
     printf("\nOrganizacion de Computadoras - TP0\n");
-    printf("\nEncoder/Decoder Base64 - v0.1 \n\n");
+    printf("\nEncoder/Decoder Base64 - v0.3 \n\n");
     printf("Group Members:\n");
     printf("Gonzalez Perez, Ailen\t\tPadron: 97043\n");
     printf("Mariotti, Maria Eugenia\t\tPadron: 96260\n");
@@ -49,6 +51,7 @@ int show_help(){
 
 }
 
+<<<<<<< HEAD:Sunday/main.c
 char * d_reader(FILE* file){
 
 	//I initialize a "basic" string
@@ -101,10 +104,39 @@ char * e_reader(FILE* file){
 
 	return read;
 
+=======
+char * reader(FILE* miFile){
+	
+	long lSize;
+	char *buffer;
+
+
+	fseek( miFile , 0L , SEEK_END);
+	lSize = ftell( miFile );
+	rewind( miFile );
+
+	/* allocate memory for entire content */
+	buffer = calloc( 1, lSize+1 );
+	if( !buffer ) fclose(miFile),fputs("memory alloc fails",stderr),exit(1);
+
+	/* copy the file into the buffer */
+	if( 1 != fread( buffer , lSize, 1 , miFile) )
+		fclose(miFile),free(buffer),fputs("entire read fails",stderr),exit(1);
+	
+	for(int i = 0; i < strlen(buffer);i++){
+		if(buffer[i] == '\n'){
+			for(int j = i; j < strlen(buffer);j++)
+				buffer[j] = buffer[j+1];
+		}
+	}
+	
+	return buffer;
+	
+>>>>>>> 1611d346371fc1352675dbb356ea0baee750d0cb:main.c
 }
 
 
-char * b64_decode(const char *src, size_t len) {
+char * b64_decode(char *src, size_t len) {
   int i = 0; //Contadores
   int j = 0; //para los
   int l = 0; //recorridos
@@ -318,24 +350,33 @@ int main(int argc, char* argv[]){
 				fclose(output);
 			return 0;
 		}
+<<<<<<< HEAD:Sunday/main.c
 
 
 
 
+=======
+		
+		char * target;
+		
+		if (input == stdin)
+			gets(target);
+		else
+			target = reader(input); //Argument for b64_decode/encode
+		
+>>>>>>> 1611d346371fc1352675dbb356ea0baee750d0cb:main.c
 		char* result; //Where we save the decoded/encoded string
 
 		if ( strcmp("decode",action) ==0 ){ //If action = decode -> call b64_decode
-			char * target = d_reader(input); //Argument for b64_decode/encode
 			result = b64_decode(target,strlen(target));
 		}
 
 		else{ //If action = encode -> call b64_encode
-			char * target = e_reader(input);
 			result = b64_encode(target,strlen(target));
 		}
 
 		if(output == stdout) //If stdout -> printf the result
-			printf("\nEl resultado del %s es: %s \n\n",action,result); //Make it friendly
+			printf("\n%s\n",result); //Make it friendly
 
 		else{ //Print on file the result
 			fprintf(output, "%s", result);
@@ -344,7 +385,13 @@ int main(int argc, char* argv[]){
 
 		if(input != stdin)
 			fclose(input); //If it was open, close the input file
+<<<<<<< HEAD:Sunday/main.c
 
 		//free(result);
+=======
+			
+		free(result);  
+		
+>>>>>>> 1611d346371fc1352675dbb356ea0baee750d0cb:main.c
 		return 0; //Everything went fine
 }

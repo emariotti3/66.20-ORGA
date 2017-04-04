@@ -1,0 +1,8 @@
+./tp0 -h
+
+./tp0 --version
+
+./tp0 -i fail.txt
+
+
+
