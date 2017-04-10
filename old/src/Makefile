@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -g -Wall -pedantic -std=c99
 
 OBJECTS = encoder_decoder_t.o
-EXEC = encdec
+EXEC = tp0
 
 VALGRIND = valgrind --track-origins=yes --leak-check=full
 VALGRIND-V = $(VALGRIND) -v

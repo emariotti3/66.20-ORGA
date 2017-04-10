@@ -11,10 +11,16 @@
 #define BYTE_SZ 8
 #define GROUP_SZ 6
 #define FILL_CHAR_POS 64
+#define SYMBOL_POS 62
 #define ENCODED_GROUP_SZ 4
 #define DECODED_GROUP_SZ 3
 #define SUCCESS 0
-#define END_LINE '\n'
+#define NEW_LINE '\n'
+
+#define DELTA_UPP 65
+#define DELTA_LOW 71
+#define DELTA_NUM 4
+#define DELTA_SYM 18
 
 //TODO: además de códigos de error habría que settear un mensaje del error
 //para mostrar por pantalla (strerror)
@@ -43,8 +49,25 @@ char encode(EncDec_t *self, int letter_index){
     return encoded_letter;
 }
 
-bool at_eof(EncDec_t *self, char *str){
-    return (*str == EOF) || ((self->input_file == stdin) && (*str == '\n' || *str == '\0'));
+bool at_stdin_end(EncDec_t *self, char c){
+    return self->input_file == stdin && c == NEW_LINE;
+}
+
+int read_input(EncDec_t *self, char *buffer, size_t count){
+    int i = 0;
+    char c;
+    for(; i < count; ++i){
+        c = getc(self->input_file);
+        //No incluyo los caracteres nulos o EOF
+        if (c == EOF || c == '\0'){
+            return i;
+        }
+        buffer[i] = c;
+        if (at_stdin_end(self, c)){
+            return i+1;
+        }
+    }
+    return count;
 }
 
 int concantenate_binary_to_int(char *characters){
@@ -57,7 +80,7 @@ int concantenate_binary_to_int(char *characters){
 
 int encode_text(EncDec_t *self){
     //TODO:esto se podría flexibilizar mas:
-    int index = 0, shift_count = 0, read_byte = 0;
+    int index = 0, shift_count = 0, read_bytes = 0, tot_read = 0;
     //group_qty: la cantidad de grupos de 6 bits que puedo formar
     //con los bytes que leo:
     int group_qty = (BYTE_GROUP * BYTE_SZ) / GROUP_SZ;
@@ -70,17 +93,22 @@ int encode_text(EncDec_t *self){
     memset(&read_letters, '\0', sizeof(int));
     memset(&encoded_chars,'\0',(group_qty + 1)*sizeof(char));
 
-    char *resu = fgets(read_letters, BYTE_GROUP + 1, self->input_file);
+    tot_read = read_input(self, read_letters, BYTE_GROUP);
+
     //Leo 3 bytes del archivo de entrada y los guardo en read_letters
-    while(!at_eof(self, resu)){
-        //Concateno los bits de los 3 bytes leidos en un int (32 bits)
-        read_byte = concantenate_binary_to_int(read_letters);
-        //Ahora para operaciones logicas con las mascaras
+    while (tot_read > 0){
+        //Leo 3 bytes del input y los almaceno en un array de chars, para
+        //luego concatenar los bits de los 3 bytes leidos en un int (32 bits).
+        //No puedo aplicar fread directamente al integer porque me cambia
+        //el endianness.
+        read_bytes = concantenate_binary_to_int(read_letters);
+
+        //Ahora aplico operaciones logicas con las mascaras
         //y shifteo de bits para poder obtener los grupos
         //de bits que quiero y obtengo un index:
         for (int j = 0; j < group_qty; ++j){
             shift_count = (group_qty - j - 1)*GROUP_SZ + BYTE_SZ;
-            index = (read_byte & masks[j]) >> shift_count;
+            index = (read_bytes & masks[j]) >> shift_count;
             //Si index es 0, entonces le asignamos la posicion
             //del caracter de relleno('=' en este caso).
             index = (index != 0)? index : FILL_CHAR_POS;
@@ -89,15 +117,27 @@ int encode_text(EncDec_t *self){
             encoded_chars[j] = encode(self, index);
         }
         fwrite(encoded_chars, sizeof(char), group_qty, self->output_file);
+
+        memset(&read_bytes, 0, sizeof(int));
         memset(&read_letters, '\0', sizeof(int));
         memset(&encoded_chars,'\0',(group_qty + 1)*sizeof(char));
-        resu = fgets(read_letters, BYTE_GROUP + 1, self->input_file);
+
+        //Corto la codificacion si en el string anterior leido había un
+        //caracter de fin:
+        if (tot_read < BYTE_GROUP){
+            char new_ln = NEW_LINE;
+            fwrite(&new_ln, sizeof(char), 1, self->output_file);
+            return SUCCESS;
+        }
+        tot_read = read_input(self, read_letters, BYTE_GROUP);
     }
+    char new_ln = NEW_LINE;
+    fwrite(&new_ln, sizeof(char), 1, self->output_file);
     return SUCCESS;
 }
 
-void decode_to_output_file(EncDec_t *self, unsigned char *letter_indexes){
-    char buff[DECODED_GROUP_SZ];
+void decode_to_output_file(EncDec_t *self, char *letter_indexes){
+    char buff[DECODED_GROUP_SZ + 1];
     memset(buff, '\0', (DECODED_GROUP_SZ + 1)*sizeof(char));
 
     //Teniendo los números asociados se hace la decodificación en sí misma
@@ -108,58 +148,80 @@ void decode_to_output_file(EncDec_t *self, unsigned char *letter_indexes){
     buff[1] = ((letter_indexes[1] & 0xf) << 4) | ((letter_indexes[2] & 0x3c) >> 2);
     buff[2] = ((letter_indexes[2] & 0x3) << 6) | letter_indexes[3];
 
-    fwrite(buff, sizeof(char), DECODED_GROUP_SZ, self->output_file);
+    fwrite(buff, sizeof(char), strlen(buff), self->output_file);
+}
+
+bool issymbol(EncDec_t *self, char *c){
+    unsigned char encoded_letter = '\0';
+    fseek(self->characters, SYMBOL_POS, SEEK_SET);
+    bool found_letter_index = false;
+    while (!feof(self->characters) || !found_letter_index) {
+        encoded_letter = fgetc(self->characters);
+        found_letter_index = (*c == encoded_letter);
+        if (found_letter_index) {
+            *c = ftell(self->characters) - 1;
+            return true;
+        }
+    }
+    return false;
+}
+
+int decode(EncDec_t *self, char *letters, char fill_character){
+    char indexes[ENCODED_GROUP_SZ + 1];
+    memset(indexes, '\0', (ENCODED_GROUP_SZ + 1)*sizeof(char));
+
+    for (int i = 0; i < ENCODED_GROUP_SZ; ++i) {
+        //Si no, tenemos que buscar el índice de la letra.
+        //en b64 y guardar su posición.
+        if (letters[i] == fill_character){
+            //Si la letra leida es el caracter de relleno,
+            //llenamos con 0 la posicion de ese caracter.
+            indexes[i] =  0;
+            continue;
+        }
+        if(isupper(letters[i])){
+            indexes[i] = letters[i] - DELTA_UPP;
+            continue;
+        }
+        if(islower(letters[i])){
+            indexes[i] = letters[i] - DELTA_LOW;
+            continue;
+        }
+        if(isdigit(letters[i])){
+            indexes[i] = letters[i] + DELTA_NUM;
+            continue;
+        }
+        if(!issymbol(self, letters +i)){
+            return INVALID_CHARACTER;
+        }
+    }
+    decode_to_output_file(self, indexes);
+    return SUCCESS;
 }
 
 int decode_text(EncDec_t *self){
-    size_t qty_read = 0;
-    unsigned char indexes[ENCODED_GROUP_SZ + 1], letters[ENCODED_GROUP_SZ + 1];
+    int qty_read = 0, result = SUCCESS;
+    char letters[ENCODED_GROUP_SZ + 1];
     memset(letters, '\0', (ENCODED_GROUP_SZ + 1)*sizeof(char));
-    unsigned char encoded_letter = '\0';
 
     //Obtengo el caracter de relleno ('=')
     fseek(self->characters, FILL_CHAR_POS, SEEK_SET);
     char fill_character = fgetc(self->characters);
     fseek(self->characters, 0, SEEK_SET);
 
-    //Vamos a tomar caracteres mientras no se termine src
-    //while (!at_eof(self->input_file)) {
-    while (!feof(self->input_file)) {
-        //Inicializo el array de caracteres leidos con el caractere
-        //de relleno por si no se completa la cantidad de bytes esperados.
-        //Esto solo agrega un '\0' al resultado decodificado.
-        memset(letters, fill_character, ENCODED_GROUP_SZ*sizeof(char));
-        memset(indexes, '\0', (ENCODED_GROUP_SZ + 1)*sizeof(char));
+    //Inicializo el array de caracteres leidos con el caractere
+    //de relleno por si no se completa la cantidad de bytes esperados.
+    //Esto solo agrega un '\0' al resultado decodificado.
+    memset(letters, fill_character, ENCODED_GROUP_SZ*sizeof(char));
+    qty_read = read_input(self, letters, ENCODED_GROUP_SZ);
 
-        qty_read = fread(letters, sizeof(char), ENCODED_GROUP_SZ, self->input_file);
-
-        //Se mueve por los 4 bytes
-        for (int i = 0; i < qty_read; ++i) {
-            //Si el caracter no pertenece a los posibles en b64
-            //y no es el caracter de relleno ('=') -> se rompe el ciclo.
-            if ( (letters[i] != fill_character) && !isalnum(letters[i]) ) {
-        	       return INVALID_CHARACTER;
-        	  }
-            if (letters[i] == fill_character){
-                //Si la letra leida es el caracter de relleno,
-                //llenamos con 0 la posicion de ese caracter.
-                indexes[i] =  0;
-            }else{
-                //Si no, tenemos que buscar el índice de la letra.
-                //en la lista de b64 y guardar su posición.
-                fseek(self->characters, 0, SEEK_SET);
-                bool found_letter_index = false;
-                //while (!at_eof(self->characters) && !found_letter_index) {
-                while (!feof(self->characters) && !found_letter_index) {
-                    encoded_letter = fgetc(self->characters);
-                    found_letter_index = (letters[i] == encoded_letter);
-                    if (found_letter_index) {
-                        indexes[i] = ftell(self->characters) - 1; //No necesita seguir buscando
-                    }
-                }
-            }
+    while (qty_read > 0){
+        result = decode(self, letters, fill_character);
+        if (qty_read < ENCODED_GROUP_SZ){
+            return result;
         }
-        decode_to_output_file(self, indexes);
+        memset(letters, fill_character, ENCODED_GROUP_SZ*sizeof(char));
+        qty_read = read_input(self, letters, ENCODED_GROUP_SZ);
     }
-    return SUCCESS;
+    return result;
 }

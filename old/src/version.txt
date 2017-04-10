@@ -1,0 +1,6 @@
+Organizacion de Computadoras - TP0
+Encoder/Decoder Base64 - v0.1
+Group Members:
+Gonzalez Perez, Ailen Padron: 97043
+Mariotti, Maria Eugenia Padron: 96260
+Raña, Cristian Ezequiel Padron: 95457

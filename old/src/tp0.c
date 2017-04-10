@@ -2,60 +2,41 @@
 #include <stdlib.h>
 #include <string.h>
 #include "encoder_decoder_t.h"
+
 #define COMPARATOR 0
-#define ENCODE 0
-#define DECODE 1
-#define ERROR_ACTION 2
+#define EXIT_SUCCESS 0
+#define ERROR_ACTION 1
+#define ENCODE 2
+#define DECODE 3
+#define BUFF_SZ 100
+#define VERSION "version.txt"
+#define HELP "help.txt"
+
+int print_file(char *fname){
+    char buff[BUFF_SZ + 1];
+    FILE *file = fopen(fname, "r+");
+    while(!feof(file)){
+        memset(buff, '\0',(BUFF_SZ + 1)*sizeof(char));
+        fread(buff, sizeof(char), BUFF_SZ, file);
+        printf("%s",buff);
+    }
+    fclose(file);
+    return EXIT_SUCCESS;
+}
 
 int show_version(){
-
-    printf("Organizacion de Computadoras - TP0\n");
-    printf("Encoder/Decoder Base64 - v0.1\n\n");
-    printf("Group Members:\n");
-    printf("Gonzalez Perez, Ailen\t\tPadron: 97043\n");
-    printf("Mariotti, Maria Eugenia\t\tPadron: 96260\n");
-    printf("Raña, Cristian Ezequiel\t\tPadron: 95457\n");
-
-    return EXIT_SUCCESS;
-
+    return print_file(VERSION);
 }
 
 int show_help(){
-
-    printf("Usage:\n");
-    printf("  tp0 -h\n");
-    printf("  tp0 -V\n");
-    printf("  tp0 [options]\n\n");
-    printf("Options:\n");
-    printf("  -V, --version\t\tPrint version and quit.\n");
-    printf("  -h, --help\t\tPrint this information.\n");
-    printf("  -i, --input\t\tLocation of the input file.\n");
-    printf("  -o, --output\t\tLocation of the output file.\n");
-    printf("  -a, --action\t\tProgram action: encode (default) or decode.\n\n");
-    printf("Examples:\n");
-    printf("  tp0 -a encode -i ~/input -o ~/output\n");
-    printf("  tp0 -a decode\n\n");
-
-    return EXIT_SUCCESS;
-
+    return print_file(HELP);
 }
 
-int free_mem(FILE* input, FILE* output){
-
-    //if (input != stdin){
-        fclose(input);
-    //    printf("Libera INPUT FILE\n");
-    //}
-
-    //if (output != stdout){
-        fclose(output);
-      //  printf("Libera OUTPUT FILE\n");
-    //}
-
-    return EXIT_SUCCESS;
+bool free_mem(FILE* input, FILE* output){
+    return (fclose(input) != EOF) && (fclose(output) != EOF);
 }
 
-int menu(int argc, char** argv, FILE *input, FILE *output){
+int menu(int argc, char** argv, FILE **input, FILE **output){
     int exit = ENCODE;
 
     for (int counter = 1; counter < argc; counter++){
@@ -83,13 +64,13 @@ int menu(int argc, char** argv, FILE *input, FILE *output){
         else if (strncmp(argv[counter],"-o",strlen("-o")) == COMPARATOR || strncmp(argv[counter],"--output",strlen("--output")) == COMPARATOR){
             counter++;
             if (strncmp(argv[counter],"-",strlen("-")) != COMPARATOR){
-                *output = *fopen(argv[counter],"wb+");
+                *output = fopen(argv[counter],"wb+");
             }
         }
         else if (strncmp(argv[counter],"-i",strlen("-i")) == COMPARATOR || strncmp(argv[counter],"--input",strlen("--input")) == COMPARATOR){
             counter++;
             if (strncmp(argv[counter],"-",strlen("-")) != COMPARATOR){
-                *input = *fopen(argv[counter],"rb+");
+                *input = fopen(argv[counter],"rb+");
             }
         }
     }
@@ -101,18 +82,18 @@ int main(int argc, char* argv[]){
     FILE* input = stdin;
     FILE* output = stdout;
 
-    int action_code = menu(argc, argv, input, output);
+    int action_code = menu(argc, argv, &input, &output);
     init_encdec(&encdec, input, output);
 
-    switch (action_code) {
+    switch (action_code){
         case ENCODE:
             encode_text(&encdec);
             break;
         case DECODE:
             decode_text(&encdec);
             break;
+        case EXIT_SUCCESS:
+            return EXIT_SUCCESS;
     }
-
-    free_mem(input, output);
-    return EXIT_SUCCESS;
+    return free_mem(input, output);
 }
