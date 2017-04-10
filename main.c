@@ -27,12 +27,11 @@ int show_version(){
     printf("Raña, Cristian Ezequiel\t\tPadron: 95457\n \n");
     
     return EXIT_SUCCESS;
-
 }
 
 int show_help(){
 
-    printf("Usage:\n");
+    printf("\nUsage:\n");
     printf("  tp0 -h\n");
     printf("  tp0 -V\n");
     printf("  tp0 [options]\n\n");
@@ -47,56 +46,53 @@ int show_help(){
     printf("  tp0 -a decode\n\n");
 
     return EXIT_SUCCESS;
-
 }
 
 char * b64_decode(char *src, size_t len) {
-  int i = 0; //Contadores
-  int j = 0; //para los
-  int l = 0; //recorridos
-  
+  int i = 0, j = 0, l = 0; //Contadores para los recorridos.
   size_t size = 0;
   char *dec = NULL;
-  unsigned char buf[3];
-  unsigned char tmp[4];
+  unsigned char buf[3], tmp[4];
 
-  // alloc
+  // Alloc
   dec = (char *) malloc(0); 
-  if (NULL == dec) { return NULL; }
+  if (NULL == dec){
+  	return NULL;
+  }
 
-  //Vamos a tomar caracteres mientras no se termine src
+  // Vamos a tomar caracteres mientras no se termine src
   while (len--) {
-    //Vamos a ir leyendo hasta 4 bytes (los 4 bytes de b64 nos dan 3 bytes de ascii
-    //Se van guardando en tmp esos 4 bytes
+    // Vamos a ir leyendo hasta 4 bytes (los 4 bytes de Base64 nos dan 3 bytes de ASCII
+    // Se van guardando en tmp esos 4 bytes
     tmp[i++] = src[j++];
-	}
-    //Se mueve por los 4 bytes
-      for (i = 0; i < 4; ++i) {
-        //Cuando encontramos el caracter en la lista de b64, guardamos su posición
-        //(Su número asociado)
-        for (l = 0; l < 64; ++l) {
-          if (tmp[i] == b64_table[l]) {
-            tmp[i] = l;
-            break; //No necesita seguir buscando
-          }
-        }
-      }
+  }
 
-      //Teniendo los números asociados se hace la decodificación en sí misma
-      //relacionando los valores en b64 y ascii
-      //A considerar: 0x30 = 48 0x3c = 60  0xf= 15 0x3 = 3 
-      //Se encuentran explicados los cálculos en el informe
-       
+  // Se mueve por los 4 bytes
+  for (i = 0; i < 4; ++i) {
+    // Cuando encontramos el caracter en la lista de b64, guardamos su posición
+    // (Su número asociado)
+    for (l = 0; l < 64; ++l) {
+      if (tmp[i] == b64_table[l]) {
+        tmp[i] = l;
+        break; //No necesita seguir buscando
+      }
+    }
+  }
+
+  // Teniendo los números asociados se hace la decodificación en sí misma
+  // relacionando los valores en Base64 y ASCII
+  // A considerar: 0x30 = 48 0x3c = 60  0xf= 15 0x3 = 3 
+  // Se encuentran explicados los cálculos en el informe       
       
-      buf[0] = (tmp[0] << 2) + ((tmp[1] & 0x30) >> 4); //Línea 1
-      buf[1] = ((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2); //Línea 2
-      buf[2] = ((tmp[2] & 0x3) << 6) + tmp[3]; //Línea 3
+  buf[0] = (tmp[0] << 2) + ((tmp[1] & 0x30) >> 4); //Línea 1
+  buf[1] = ((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2); //Línea 2
+  buf[2] = ((tmp[2] & 0x3) << 6) + tmp[3]; //Línea 3
 
-      //Guardamos lo obtenido 
-      dec = (char *) realloc(dec, size + 3);
-      for (i = 0; i < 3; ++i) {
-        dec[size++] = buf[i];
-      }
+  //Guardamos lo obtenido 
+  dec = (char *) realloc(dec, size + 3);
+  for (i = 0; i < 3; ++i) {
+    dec[size++] = buf[i];
+  }
 
   //Agregamos el caracter de fin de línea.
   dec = (char *) realloc(dec, size + 1);
@@ -106,65 +102,66 @@ char * b64_decode(char *src, size_t len) {
 }
 
 char * b64_encode (char *src, size_t len) {
-int i = 0;
-  int j = 0;
+  int i = 0, j = 0, h, k;
   char *enc = NULL;
   size_t size = 0;
-  unsigned char buf[4];
-  unsigned char tmp[3];
+  unsigned char buf[4], tmp[3];
 
   // alloc
   enc = (char *) malloc(0);
-  if (NULL == enc) { return NULL; }
-
-  // parse until end of source
-  while (len--) {
-    // read up to 3 bytes at a time into `tmp'
-    tmp[i++] = *(src++);
-
-    // if 3 bytes read then encode into `buf'
-    if (3 == i) {
-      buf[0] = (tmp[0] & 0xfc) >> 2;
-      buf[1] = ((tmp[0] & 0x03) << 4) + ((tmp[1] & 0xf0) >> 4);
-      buf[2] = ((tmp[1] & 0x0f) << 2) + ((tmp[2] & 0xc0) >> 6);
-      buf[3] = tmp[2] & 0x3f;
-
-      // allocate 4 new byts for `enc` and
-      // then translate each encoded buffer
-      // part by index from the base 64 index table
-      // into `enc' unsigned char array
-      enc = (char *) realloc(enc, size + 4);
-      for (i = 0; i < 4; ++i) {
-        enc[size++] = b64_table[buf[i]];
-      }
-
-      // reset index
-      i = 0;
-    }
+  if (NULL == enc){ 
+  	return NULL;
   }
 
-  // remainder
-  if (i > 0) {
-    // fill `tmp' with `\0' at most 3 times
-    for (j = i; j < 3; ++j) {
+  // Parse until end of source
+  for (h = 0; h < 3; h++){
+	// Read up to 3 bytes at a time into `tmp'
+    tmp[i++] = *(src++);
+  }
+
+  // If 3 bytes read then encode into `buf'
+  if (len == 3) {
+    buf[0] = (tmp[0] & 0xfc) >> 2;
+    buf[1] = ((tmp[0] & 0x03) << 4) + ((tmp[1] & 0xf0) >> 4);
+    buf[2] = ((tmp[1] & 0x0f) << 2) + ((tmp[2] & 0xc0) >> 6);
+    buf[3] = tmp[2] & 0x3f;
+    
+    // Allocate 4 new bytes for 'enc' and
+    // then translate each encoded buffer
+    // part by index from the base 64 index table
+    // into 'enc' unsigned char array.
+    enc = (char *) realloc(enc, size + 4);
+    for (i = 0; i < 4; ++i) {
+      enc[size++] = b64_table[buf[i]];
+    }
+  
+  // Reset index
+  i = 0;
+  } 
+
+  // Remainder
+  if (len < 3) {
+
+    // Fill 'tmp' with '\0' at most 3 times
+    for (j = len; j < 3; ++j) {
       tmp[j] = '\0';
     }
 
-    // perform same codec as above
+    // Perform same codec as above
     buf[0] = (tmp[0] & 0xfc) >> 2;
     buf[1] = ((tmp[0] & 0x03) << 4) + ((tmp[1] & 0xf0) >> 4);
     buf[2] = ((tmp[1] & 0x0f) << 2) + ((tmp[2] & 0xc0) >> 6);
     buf[3] = tmp[2] & 0x3f;
 
-    // perform same write to `enc` with new allocation
-    for (j = 0; (j < i + 1); ++j) {
+    // Perform same write to 'enc' with new allocation
+    for (j = 0; j < (len + 1); j++) {
       enc = (char *) realloc(enc, size + 1);
       enc[size++] = b64_table[buf[j]];
     }
 
-    // while there is still a remainder
-    // append `=' to `enc'
-    while ((i++ < 3)) {
+    // While there is still a remainder
+    // Append '=' to 'enc'
+    for (k = len; k < 3; k++){
       enc = (char *) realloc(enc, size + 1);
       enc[size++] = '=';
     }
@@ -175,8 +172,6 @@ int i = 0;
   enc[size] = '\0';
 
   return enc;
-
-
 }
 
 int main(int argc, char* argv[]){
@@ -281,21 +276,21 @@ int main(int argc, char* argv[]){
 					else{
 						seguir = false;
 						for (int j=i;j<3;j++){ //Si es fin de linea, completamos con 0 lo que falte
-							target[j]=0;	
+							target[j]=0;
 						}
+						break;
 					}
 				}
 				
 				target[3] = '\0';
 				if(strcmp(&target[0],"")!=0){
-				char* encoded = b64_encode(&target[0],3);
+				char* encoded = b64_encode(&target[0],i);
 
 				result = realloc(result,(int) strlen(result)+5);
 				result = strcat(result,encoded);
 				}
-			}
-				
-						
+			}				
+
 			result = realloc(result,strlen(result)+1);
 			result[strlen(result)]='\n';
 		}
