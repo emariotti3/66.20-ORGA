@@ -260,28 +260,29 @@ int main(int argc, char* argv[]){
 		}
 		
 		else{ //If action = encode -> call b64_encode
-			result = malloc(2);
+			result = malloc(4);
 			while ( seguir ){
-			char target[4]; 
-			for (int i = 0; i < 3; i++){
-				printf("for\n");
-				int character = fgetc(input); //Tomamos el caracter
-				if (character != '\0' && character != EOF){ //Si no es fin de file, lo guardamos
-					if (character!='\n')
-						target[i]=character;
-				}
-				else{
-					for (int j=i;j<3;j++){ //Si es fin de linea, completamos con 0 lo que falte
-						target[j]='\0';
+				char target[6]; 
+				int i=0;
+				for (i = 0; i < 5; i++){
+					int character = fgetc(input); //Tomamos el caracter
+					if (character != '\0' && character != EOF){ //Si no es fin de file, lo guardamos
+						if (character!='\n')
+							target[i]=character;
 					}
-					seguir = false;
+				else{
+					for (int j=i;j<5;j++){ //Si es fin de linea, completamos con 0 lo que falte
+						target[j]='\0';
+						seguir = false;
+					}
 				}
+				}
+				target[5] = '\0';
+				char* decoded = b64_encode(&target[0],5);
+				result = realloc(result,strlen(result)+5);
+				result = strcat(result,decoded);
 			}
-			target[3] = '\0';
-			char* decoded = b64_encode(&target[0],3);
-			result = realloc(result,strlen(result)+5);
-			result = strcat(result,decoded);
-			}
+			
 			result = realloc(result,strlen(result)+1);
 			result[strlen(result)]='\0';
 		}
@@ -302,4 +303,3 @@ int main(int argc, char* argv[]){
 		
 		return 0; //Everything went fine
 }
-
