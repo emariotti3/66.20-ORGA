@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -Wall -pedantic -std=c99
+CFLAGS = -o0 -g -Wall -pedantic -std=c99
 
 OBJECTS = encoder_decoder_t.o
 EXEC = tp0
@@ -13,7 +13,7 @@ encoder_decoder_t.o: encoder_decoder_t.c encoder_decoder_t.h
 	$(CC) $(CFLAGS) -c encoder_decoder_t.c -o encoder_decoder_t.o
 
 $(EXEC): $(OBJECTS)
-	$(CC) $(CFLAGS) $(OBJECTS) tp0.c -o $(EXEC)
+	$(CC) $(CFLAGS) $(OBJECTS) tp0.c -o $(EXEC) -lm
 
 run: $(EXEC)
 	./$(EXEC)
