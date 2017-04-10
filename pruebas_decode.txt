@@ -1,9 +1,0 @@
-echo TGUgcm9nw7MgYSBEaW9zIHF1ZSBsZSBjb25jZWRpZXJhIGFsIG1lbm9zIHVuIGluc3RhbnRlIHBhcmEgcXVlIMOpbCBubyBzZSBmdWVyYQ== | ./tp0 -a decode
-echo c2luIHNhYmVyIGN1w6FudG8gbG8gaGFiw61hIHF1ZXJpZG8gcG9yIGVuY2ltYSBkZSBsYXMgZHVkYXMgZGUgYW1ib3Ms| ./tp0 -a decode
-echo eSBzaW50acOzIHVuIGFwcmVtaW8gaXJyZXNpc3RpYmxlIGRlIGVtcGV6YXIgbGEgdmlkYSBjb24gw6lsIG90cmEgdmV6| ./tp0 -a decode
-echo ZGVzZGUgZWwgcHJpbmNpcGlvIHBhcmEgZGVjaXJzZSB0b2RvIGxvIHF1ZSBzZSBsZXMgcXVlZMOzIHNpbiBkZWNpciw=| ./tp0 -a decode
-echo eSB2b2x2ZXIgYSBoYWNlciBiaWVuIGN1YWxxdWllciBjb3NhIHF1ZSBodWJpZXJhbiBoZWNobyBtYWwgZW4gZWwgcGFzYWRvLg==| ./tp0 -a decode
-echo UGVybyB0dXZvIHF1ZSByZW5kaXJzZSBhbnRlIGxhIGludHJhbnNpZ2VuY2lhIGRlIGxhIG11ZXJ0ZS4=| ./tp0 -a decode
-echo U3UgZG9sb3Igc2UgZGVzY29tcHVzbyBlbiB1bmEgY8OzbGVyYSBjaWVnYSBjb250cmEgZWwgbXVuZG8s| ./tp0 -a decode
-echo eSBhdW4gY29udHJhIGVsbGEgbWlzbWEsIHkgZXNvIGxlIGluZnVuZGnDsyBlbCBkb21pbmlv| ./tp0 -a decode
-echo eSBlbCB2YWxvciBwYXJhIGVuZnJlbnRhcnNlIHNvbGEgYSBzdSBzb2xlZGFkLg==| ./tp0 -a decode
