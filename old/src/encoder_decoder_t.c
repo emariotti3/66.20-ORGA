@@ -125,14 +125,14 @@ int encode_text(EncDec_t *self){
         //Corto la codificacion si en el string anterior leido había un
         //caracter de fin:
         if (tot_read < BYTE_GROUP){
-            char new_ln = NEW_LINE;
-            fwrite(&new_ln, sizeof(char), 1, self->output_file);
+            /*char new_ln = NEW_LINE;
+            fwrite(&new_ln, sizeof(char), 1, self->output_file);*/
             return SUCCESS;
         }
         tot_read = read_input(self, read_letters, BYTE_GROUP);
     }
-    char new_ln = NEW_LINE;
-    fwrite(&new_ln, sizeof(char), 1, self->output_file);
+    /*char new_ln = NEW_LINE;
+    fwrite(&new_ln, sizeof(char), 1, self->output_file);*/
     return SUCCESS;
 }
 
@@ -173,6 +173,7 @@ int decode(EncDec_t *self, char *letters, char fill_character){
     for (int i = 0; i < ENCODED_GROUP_SZ; ++i) {
         //Si no, tenemos que buscar el índice de la letra.
         //en b64 y guardar su posición.
+        //TODO: esta pared de ifs hay que emprolijarla:
         if (letters[i] == fill_character){
             //Si la letra leida es el caracter de relleno,
             //llenamos con 0 la posicion de ese caracter.
