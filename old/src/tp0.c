@@ -15,6 +15,7 @@
 int print_file(char *fname){
     char buff[BUFF_SZ + 1];
     FILE *file = fopen(fname, "r+");
+
     while(!feof(file)){
         memset(buff, '\0',(BUFF_SZ + 1)*sizeof(char));
         fread(buff, sizeof(char), BUFF_SZ, file);
@@ -64,13 +65,28 @@ int menu(int argc, char** argv, FILE **input, FILE **output){
         else if (strncmp(argv[counter],"-o",strlen("-o")) == COMPARATOR || strncmp(argv[counter],"--output",strlen("--output")) == COMPARATOR){
             counter++;
             if (strncmp(argv[counter],"-",strlen("-")) != COMPARATOR){
-                *output = fopen(argv[counter],"wb+");
+                FILE* salida = fopen(argv[counter],"wb+");
+                if (!salida){
+					printf("Error de apertura de archivo de salida. No se puede continuar.\n");
+					return -1;
+				}
+				else{
+					*output = salida;
+				}
             }
         }
         else if (strncmp(argv[counter],"-i",strlen("-i")) == COMPARATOR || strncmp(argv[counter],"--input",strlen("--input")) == COMPARATOR){
             counter++;
             if (strncmp(argv[counter],"-",strlen("-")) != COMPARATOR){
-                *input = fopen(argv[counter],"rb+");
+                FILE* entrada = fopen(argv[counter],"rb+");
+                if (!entrada){
+					printf("Error de apertura de archivo de entrada. No se puede continuar.\n");
+					return -1;
+				}
+				else{
+					*input = entrada;
+				}            
+            
             }
         }
     }
@@ -83,6 +99,9 @@ int main(int argc, char* argv[]){
     FILE* output = stdout;
 
     int action_code = menu(argc, argv, &input, &output);
+    if (action_code == -1){
+			return -1;
+	}
     init_encdec(&encdec, input, output);
 
     switch (action_code){
@@ -97,3 +116,4 @@ int main(int argc, char* argv[]){
     }
     return free_mem(input, output);
 }
+
