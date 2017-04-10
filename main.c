@@ -80,7 +80,6 @@ char * reader(FILE* miFile){
 	
 }
 
-
 char * b64_decode(char *src, size_t len) {
   int i = 0; //Contadores
   int j = 0; //para los
@@ -97,19 +96,11 @@ char * b64_decode(char *src, size_t len) {
 
   //Vamos a tomar caracteres mientras no se termine src
   while (len--) {
-    //Si el caracter no pertenece a los posibles en b64
-    //o si es el símbolo = -> rompe el ciclo
-    if ( ('=' == src[j]) || (!(isalnum(src[j]) || '+' == src[j] || '/' == src[j])) ) { 
-		break; 
-	}
-
     //Vamos a ir leyendo hasta 4 bytes (los 4 bytes de b64 nos dan 3 bytes de ascii
     //Se van guardando en tmp esos 4 bytes
     tmp[i++] = src[j++];
-
-    // Si ya leimos 4, pasamos a la traducción
-    if (4 == i) {
-      //Se mueve por los 4 bytes
+	}
+    //Se mueve por los 4 bytes
       for (i = 0; i < 4; ++i) {
         //Cuando encontramos el caracter en la lista de b64, guardamos su posición
         //(Su número asociado)
@@ -137,40 +128,6 @@ char * b64_decode(char *src, size_t len) {
         dec[size++] = buf[i];
       }
 
-      //Reseteamos el contador de i
-      i = 0;
-    }
-  }
-
-  //Si no es múltiplo de 4, vamos a tener un valor en i, que será 1-2-3
-  if (i > 0) {
-    //Vamos a llenar tmp(j) con \0
-    for (j = i; j < 4; ++j) {
-      tmp[j] = '\0';
-    }
-
-    //Buscamos la traducción para lo que haya quedado grabado tras agregar los \0
-    for (j = 0; j < 4; ++j) {
-        for (l = 0; l < 64; ++l) {
-          if (tmp[j] == b64_table[l]) {
-            tmp[j] = l;
-            break;
-          }
-        }
-    }
-
-    //Decodificación
-    buf[0] = (tmp[0] << 2) + ((tmp[1] & 0x30) >> 4);
-    buf[1] = ((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2);
-    buf[2] = ((tmp[2] & 0x3) << 6) + tmp[3];
-
-    //Agregamos lo que faltaba a dec
-    dec = (char *) realloc(dec, size + (i - 1));
-    for (j = 0; (j < i - 1); ++j) {
-      dec[size++] = buf[j];
-    }
-  }
-
   //Agregamos el caracter de fin de línea.
   dec = (char *) realloc(dec, size + 1);
   dec[size] = '\0';
@@ -179,22 +136,25 @@ char * b64_decode(char *src, size_t len) {
 }
 
 char * b64_encode (char *src, size_t len) {
-  int i = 0;
-  int j = 0;
-  char * enc = NULL;
+  int i = 0; //Contadores
+  int j = 0; //para recorridos
+ 
+  
   size_t size = 0;
+  char *enc = NULL;
   unsigned char buf[4];
   unsigned char tmp[3];
 
-  enc = (char *) malloc(0);
+  // alloc
+  enc = (char *) malloc(0); 
   if (NULL == enc) { return NULL; }
 
-
+  //Vamos a tomar caracteres mientras no se termine src
   while (len--) {
-    tmp[i++] = *(src++);
-
-    // Aquí es de a tres (inverso a decode)
-    if (3 == i) {
+    //Vamos a ir leyendo hasta 4 bytes (los 4 bytes de b64 nos dan 3 bytes de ascii
+    //Se van guardando en tmp esos 4 bytes
+    tmp[i++] = src[j++];
+	}
       buf[0] = (tmp[0] & 0xfc) >> 2;
       buf[1] = ((tmp[0] & 0x03) << 4) + ((tmp[1] & 0xf0) >> 4);
       buf[2] = ((tmp[1] & 0x0f) << 2) + ((tmp[2] & 0xc0) >> 6);
@@ -204,38 +164,10 @@ char * b64_encode (char *src, size_t len) {
       for (i = 0; i < 4; ++i) {
         enc[size++] = b64_table[buf[i]];
       }
-
-      i = 0; 
-    }
-  }
-
- 
-  if (i > 0) {
-    for (j = i; j < 3; ++j) {
-      tmp[j] = '\0';
-    }
-
-    buf[0] = (tmp[0] & 0xfc) >> 2;
-    buf[1] = ((tmp[0] & 0x03) << 4) + ((tmp[1] & 0xf0) >> 4);
-    buf[2] = ((tmp[1] & 0x0f) << 2) + ((tmp[2] & 0xc0) >> 6);
-    buf[3] = tmp[2] & 0x3f;
-
-    for (j = 0; (j < i + 1); ++j) {
-      enc = (char *) realloc(enc, size + 1);
-      enc[size++] = b64_table[buf[j]];
-    }
-
-    
-    while ((i++ < 3)) {
-      enc = (char *) realloc(enc, size + 1);
-      enc[size++] = '=';
-    }
-  }
-
-  // Add '\0' character at end.
+  //Agregamos el caracter de fin de línea.
   enc = (char *) realloc(enc, size + 1);
   enc[size] = '\0';
-
+ 
   return enc;
 }
 
@@ -261,23 +193,19 @@ int main(int argc, char* argv[]){
 			}
 		
 			if (strcmp("-i",argv[i])==0 || strcmp("--input",argv[i])==0 ){ //If -i option is set, we have an input file
-				if (strcmp("-",argv[i+1])!= 0){
-					input = fopen(argv[i+1],"rb+");
-					if (input==NULL){
-						printf("Error de apertura de archivo de entrada. No se puede continuar.\n");
-						return -1;
-					}
+				input = fopen(argv[i+1],"rb+");
+				if (input==NULL){
+					printf("Error de apertura de archivo de entrada. No se puede continuar.\n");
+					return -1;
 				}
 				i++;
 			}
 		
 			if (strcmp("-o",argv[i])==0 || strcmp("--output",argv[i])==0 ){ //If -o option is set, we have an output file
-				if (strcmp("-",argv[i+1])!= 0){
 					output = fopen(argv[i+1],"wb+");
 					if (output==NULL){
-						printf("Error de apertura de archivo de salida. No se puede continuar.\n");
-						return -1;
-					}
+					printf("Error de apertura de archivo de salida. No se puede continuar.\n");
+					return -1;
 				}
 				i++;
 			}
@@ -300,25 +228,67 @@ int main(int argc, char* argv[]){
 			return 0; 
 		}
 		
-		char * target;
+		int prev=ftell(input);
+		fseek(input, 0, SEEK_END);
+		int sizeOfFile = ftell(input);
+		sizeOfFile = sizeOfFile - 1;
+		fseek(input,prev,SEEK_SET); 
 		
-		if (input == stdin)
-			gets(target);
-		else
-			target = reader(input); //Argument for b64_decode/encode
-		
-		char* result; //Where we save the decoded/encoded string
+		char* result;
 		
 		if ( strcmp("decode",action) ==0 ){ //If action = decode -> call b64_decode
-			result = b64_decode(target,strlen(target));
+			result = malloc(3);
+			while (sizeOfFile > 0 ){
+			char target[5]; //Para decodificar tomamos de a 4 bytes
+			for (int i=0; i < 4; i++){ 
+				int character = fgetc(input); //Tomamos el caracter
+				if (character != '\0' && !( ('=' == character) || (!(isalnum(character) || '+' == character || '/' == character))) ){ //Si no es fin de file, lo guardamos
+					target[i]=character;
+				}
+				else{
+					for (int j=i;j<4;j++){ //Si es fin de linea, completamos con 0 lo que falte
+						target[j]='\0';
+					}
+				};
+			}
+			target[4] = '\0';
+			char* decoded = b64_decode(&target[0],4);
+			result = realloc(result,strlen(result)+4);
+			result = strcat(result,decoded);
+			sizeOfFile = sizeOfFile - 4; //Le comí 4 elementos
+			};
+			result = realloc(result,strlen(result)+1);
+			result[strlen(result)]='\0';
 		}
 		
 		else{ //If action = encode -> call b64_encode
-			result = b64_encode(target,strlen(target));
+			result = malloc(3);
+			while (sizeOfFile > 0 ){
+			char target[4]; //Para decodificar tomamos de a 4 bytes
+			for (int i=0; i < 3; i++){ 
+				int character = fgetc(input); //Tomamos el caracter
+				if (character != '\0'){ //Si no es fin de file, lo guardamos
+					target[i]=character;
+				}
+				else{
+					for (int j=i;j<3;j++){ //Si es fin de linea, completamos con 0 lo que falte
+						target[j]='\0';
+					}
+				};
+			}
+			target[3] = '\0';
+			char* decoded = b64_encode(&target[0],3);
+			result = realloc(result,strlen(result)+5);
+			result = strcat(result,decoded);
+			sizeOfFile = sizeOfFile - 3; //Le comí 4 elementos
+			};
+			result = realloc(result,strlen(result)+1);
+			result[strlen(result)]='\0';
 		}
 		
+		
 		if(output == stdout) //If stdout -> printf the result
-			printf("\n%s\n",result); //Make it friendly
+			printf("%s\n",result); //Make it friendly
 
 		else{ //Print on file the result
 			fprintf(output, "%s", result);
