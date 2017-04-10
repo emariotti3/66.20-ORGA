@@ -228,17 +228,14 @@ int main(int argc, char* argv[]){
 			return 0; 
 		}
 		
-		int prev=ftell(input);
-		fseek(input, 0, SEEK_END);
-		int sizeOfFile = ftell(input);
-		sizeOfFile = sizeOfFile - 1;
-		fseek(input,prev,SEEK_SET); 
-		
+
 		char* result;
+		bool seguir = true; 
 		
 		if ( strcmp("decode",action) ==0 ){ //If action = decode -> call b64_decode
 			result = malloc(3);
-			while (sizeOfFile > 0 ){
+
+			while ( seguir ){
 			char target[5]; //Para decodificar tomamos de a 4 bytes
 			for (int i=0; i < 4; i++){ 
 				int character = fgetc(input); //Tomamos el caracter
@@ -248,40 +245,43 @@ int main(int argc, char* argv[]){
 				else{
 					for (int j=i;j<4;j++){ //Si es fin de linea, completamos con 0 lo que falte
 						target[j]='\0';
+						seguir = false;
 					}
-				};
+				}
 			}
 			target[4] = '\0';
 			char* decoded = b64_decode(&target[0],4);
 			result = realloc(result,strlen(result)+4);
 			result = strcat(result,decoded);
-			sizeOfFile = sizeOfFile - 4; //Le comí 4 elementos
-			};
+			//sizeOfFile = sizeOfFile - 4; //Le comí 4 elementos
+			}
 			result = realloc(result,strlen(result)+1);
 			result[strlen(result)]='\0';
 		}
 		
 		else{ //If action = encode -> call b64_encode
-			result = malloc(3);
-			while (sizeOfFile > 0 ){
-			char target[4]; //Para decodificar tomamos de a 4 bytes
-			for (int i=0; i < 3; i++){ 
+			result = malloc(2);
+			while ( seguir ){
+			char target[4]; 
+			for (int i = 0; i < 3; i++){
+				printf("for\n");
 				int character = fgetc(input); //Tomamos el caracter
-				if (character != '\0'){ //Si no es fin de file, lo guardamos
-					target[i]=character;
+				if (character != '\0' && character != EOF){ //Si no es fin de file, lo guardamos
+					if (character!='\n')
+						target[i]=character;
 				}
 				else{
 					for (int j=i;j<3;j++){ //Si es fin de linea, completamos con 0 lo que falte
 						target[j]='\0';
 					}
-				};
+					seguir = false;
+				}
 			}
 			target[3] = '\0';
 			char* decoded = b64_encode(&target[0],3);
 			result = realloc(result,strlen(result)+5);
 			result = strcat(result,decoded);
-			sizeOfFile = sizeOfFile - 3; //Le comí 4 elementos
-			};
+			}
 			result = realloc(result,strlen(result)+1);
 			result[strlen(result)]='\0';
 		}
@@ -302,3 +302,4 @@ int main(int argc, char* argv[]){
 		
 		return 0; //Everything went fine
 }
+
