@@ -72,13 +72,19 @@ bool at_file_end(EncDec_t *self, int pos, int len){
     return pos == len;
 }
 
-bool read_input(EncDec_t *self, unsigned char *buffer, size_t count, int *read, int flen){
+bool at_inserted_eol(EncDec_t *self){
+    size_t pos = ftell(self->input_file);
+    return ((pos % MAX_LEN)== 0) && (pos > 0);
+}
+
+bool read_input(EncDec_t *self, unsigned char *buffer, size_t count, int *read, int flen, bool encode){
     //Devuelve true si durante la lectura se encontro
     //el final del archivo. Guarda el total de caracteres
     //leidos en read, sin incluir el EOF como caracter.
     char c;
     bool continue_read = true;
     //TODO: emprolijar esto:
+    if (!encode && at_inserted_eol(self)) getc(self->input_file);
     for(int i = 0; (i < count) && continue_read; ++i){
         //No incluyo los caracteres nulos o EOF
         c = getc(self->input_file);
@@ -129,6 +135,16 @@ void encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_
         //archivo de caracteres posibles:
         encoded_chars[j] = encode(self, index);
     }
+
+    /*for (int k = 0; k < max_group_qty; ++k){
+        size_t pos = ftell(self->output_file);
+        if (((pos+1) % MAX_LEN == 0) && (pos > 0)){
+            add_newline_to_output(self);
+            fputc(encoded_chars[k], self->output_file);
+        }else{
+            fputc(encoded_chars[k], self->output_file);
+        }
+    }*/
     fwrite(encoded_chars, sizeof(char), max_group_qty, self->output_file);
 }
 
@@ -140,7 +156,7 @@ int encode_text(EncDec_t *self){
     int input_len = file_len(self->input_file);
 
     //Leo de a 3 bytes y codifico:
-    while (read_input(self, read_letters, BYTE_GROUP, &tot_read, input_len)){
+    while (read_input(self, read_letters, BYTE_GROUP, &tot_read, input_len, true)){
         encode_text_to_output(self, read_letters, tot_read);
         memset(&read_letters, '\0', sizeof(int));
         if (ftell(self->output_file) % MAX_LEN == 0) add_newline_to_output(self);
@@ -153,7 +169,7 @@ int encode_text(EncDec_t *self){
     return SUCCESS;
 }
 
-void decode_to_output_file(EncDec_t *self, char *letter_indexes, bool padding){
+void decode_to_output_file(EncDec_t *self, char *letter_indexes, int padding){
     char buff[DECODED_GROUP_SZ + 1];
     memset(buff, '\0', (DECODED_GROUP_SZ + 1)*sizeof(char));
 
@@ -168,8 +184,8 @@ void decode_to_output_file(EncDec_t *self, char *letter_indexes, bool padding){
     //Esto es para que si se codifico un caracter nulo
     //en el medio de los otros caracteres, este se copie
     //al archivo decodificado.
-    size_t len = DECODED_GROUP_SZ;
-    for(; padding && (buff[len-1] == 0) && (len > 0); --len){}
+    size_t len = DECODED_GROUP_SZ - padding;
+    //for(; padding && (buff[len-1] == 0) && (len >= 0); --len){}
 
     fwrite(buff, sizeof(char), len, self->output_file);
     //size_t len = (total < DECODED_GROUP_SZ) ? total : DECODED_GROUP_SZ;
@@ -192,7 +208,7 @@ bool issymbol(EncDec_t *self, unsigned char *c, char *index){
 int decode(EncDec_t *self, unsigned char *letters, char fill_character){
     char indexes[ENCODED_GROUP_SZ + 1];
     memset(indexes, '\0', (ENCODED_GROUP_SZ + 1)*sizeof(char));
-    bool padding = false;
+    int padding = 0;
     for (int i = 0; i < ENCODED_GROUP_SZ; ++i) {
         //Si no, tenemos que buscar el índice de la letra.
         //en b64 y guardar su posición.
@@ -200,7 +216,7 @@ int decode(EncDec_t *self, unsigned char *letters, char fill_character){
         if (letters[i] == fill_character){
             //Si la letra leida es el caracter de relleno,
             //llenamos con 0 la posicion de ese caracter.
-            padding = true;
+            padding++;
             indexes[i] =  0;
             continue;
         }
@@ -227,22 +243,20 @@ int decode(EncDec_t *self, unsigned char *letters, char fill_character){
 int decode_text(EncDec_t *self){
     int input_len = file_len(self->input_file);
     int qty_read = 0, result = SUCCESS;
+    char fill_character = get_fill_char(self);
     unsigned char letters[ENCODED_GROUP_SZ + 1];
     memset(letters, '\0', (ENCODED_GROUP_SZ + 1)*sizeof(char));
-    char fill_character = get_fill_char(self);
 
     //Inicializo el array de caracteres leidos con el caractere
     //de relleno por si no se completa la cantidad de bytes esperados.
     //Esto solo agrega un '\0' al resultado decodificado.
-    //memset(letters, fill_character, ENCODED_GROUP_SZ*sizeof(char));
-    memset(letters, '\0', ENCODED_GROUP_SZ*sizeof(char));
-    read_input(self, letters, ENCODED_GROUP_SZ, &qty_read, input_len);
+    //memset(letters, '\0', ENCODED_GROUP_SZ*sizeof(char));
+    read_input(self, letters, ENCODED_GROUP_SZ, &qty_read, input_len, false);
 
-    while((qty_read == ENCODED_GROUP_SZ) && result == SUCCESS){
+    while((qty_read > 0) && result == SUCCESS){
         result = result || decode(self, letters, fill_character);
-        //memset(letters, fill_character, ENCODED_GROUP_SZ*sizeof(char));
         memset(letters, '\0', ENCODED_GROUP_SZ*sizeof(char));
-        read_input(self, letters, ENCODED_GROUP_SZ, &qty_read, input_len);
+        read_input(self, letters, ENCODED_GROUP_SZ, &qty_read, input_len, false);
     }
     return result;
 }

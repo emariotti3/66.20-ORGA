@@ -9,8 +9,6 @@ typedef enum error { INVALID_CHARACTER = 1, IO_ERROR = 2, MEMORY_ERROR = 3} Erro
 
 typedef struct encoder_decoder{
     FILE *characters;
-    //bool read_stdin;
-    //bool write_stdout;
     FILE *input_file;
     FILE *output_file;
 } EncDec_t;
