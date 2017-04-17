@@ -5,8 +5,6 @@
 #include <unistd.h>
 #include "encoder_decoder_t.h"
 
-//#define SYMBOLS_FILE "b64_characters.txt"
-#define MASK 0x3F
 #define BYTE_GROUP 3
 #define BYTE_SZ 8
 #define GROUP_SZ 6.0
@@ -17,6 +15,12 @@
 #define SUCCESS 0
 #define NEW_LINE '\n'
 #define MAX_LEN 76
+
+#define MASK 0x3F
+#define DMASK_1 0x30
+#define DMASK_2 0xf
+#define DMASK_3 0x3c
+#define DMASK_4 0x3
 
 #define DELTA_UPP 65
 #define DELTA_LOW 71
@@ -41,11 +45,6 @@ char get_fill_char(EncDec_t *self){
     return letters[FILL_CHAR_POS];
 }
 
-void add_newline_to_output(EncDec_t *self){
-    char new_ln = NEW_LINE;
-    fwrite(&new_ln, sizeof(char), 1, self->output_file);
-}
-
 void set_input(EncDec_t *self, FILE *input){
     self->input_file = input;
 }
@@ -59,17 +58,11 @@ char encode(EncDec_t *self, unsigned int letter_index){
 }
 
 bool at_stdin_end(EncDec_t *self, char c){
-    return self->input_file == stdin && (c == NEW_LINE || c == '\0');
+    return (self->input_file == stdin) && (c == NEW_LINE || c == 0);
 }
 
 bool at_file_end(EncDec_t *self, int pos, int len){
-    if (self->input_file == stdin) return false;
-    return pos == len;
-}
-
-bool at_inserted_eol(EncDec_t *self){
-    size_t pos = ftell(self->input_file);
-    return ((pos % MAX_LEN)== 0) && (pos > 0);
+    return (self->input_file != stdin) && (pos == len);
 }
 
 bool read_input(EncDec_t *self, unsigned char *buffer, size_t count, int *read, int flen, bool encode){
@@ -79,7 +72,6 @@ bool read_input(EncDec_t *self, unsigned char *buffer, size_t count, int *read, 
     char c;
     bool continue_read = true;
     //TODO: emprolijar esto:
-    if (!encode && at_inserted_eol(self)) getc(self->input_file);
     for(int i = 0; (i < count) && continue_read; ++i){
         //No incluyo los caracteres nulos o EOF
         c = getc(self->input_file);
@@ -145,13 +137,11 @@ int encode_text(EncDec_t *self){
     while (read_input(self, read_letters, BYTE_GROUP, &tot_read, input_len, true)){
         encode_text_to_output(self, read_letters, tot_read);
         memset(&read_letters, '\0', sizeof(int));
-        if (ftell(self->output_file) % MAX_LEN == 0) add_newline_to_output(self);
     }
     //Codifico lo que quedo en el buffer:
     if(tot_read > 0){
         encode_text_to_output(self, read_letters, tot_read);
     }
-    add_newline_to_output(self);
     return SUCCESS;
 }
 
@@ -163,10 +153,9 @@ void decode_to_output_file(EncDec_t *self, char *letter_indexes, int padding){
     //relacionando los valores en b64 y ascii
     //A considerar: 0x30 = 48 0x3c = 60  0xf= 15 0x3 = 3
     //Se encuentran explicados los cálculos en el informe
-    buff[0] = (letter_indexes[0] << 2) | ((letter_indexes[1] & 0x30) >> 4);
-    buff[1] = ((letter_indexes[1] & 0xf) << 4) | ((letter_indexes[2] & 0x3c) >> 2);
-    buff[2] = ((letter_indexes[2] & 0x3) << 6) | letter_indexes[3];
-
+    buff[0] = (letter_indexes[0] << 2) | ((letter_indexes[1] & DMASK_1) >> 4);
+    buff[1] = ((letter_indexes[1] & DMASK_2) << 4) | ((letter_indexes[2] & DMASK_3) >> 2);
+    buff[2] = ((letter_indexes[2] & DMASK_4) << 6) | letter_indexes[3];
     //Esto es para que si se codifico un caracter nulo
     //en el medio de los otros caracteres, este se copie
     //al archivo decodificado.
