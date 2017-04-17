@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include "encoder_decoder_t.h"
 
-#define SYMBOLS_FILE "b64_characters.txt"
+//#define SYMBOLS_FILE "b64_characters.txt"
 #define MASK 0x3F
 #define BYTE_GROUP 3
 #define BYTE_SZ 8
@@ -23,13 +23,18 @@
 #define DELTA_NUM 4
 #define DELTA_SYM 18
 
+static const char letters[] = {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O',
+'P','Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k',
+'l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','0','1','2','3','4','5',
+'6','7','8','9','+','/','='};
+
 //TODO: además de códigos de error habría que settear un mensaje del error
 //para mostrar por pantalla (strerror)
 int init_encdec(EncDec_t *self, FILE *input, FILE *output){
-    self->characters = fopen(SYMBOLS_FILE, "r+");
+    /*self->characters = fopen(SYMBOLS_FILE, "r+");
     if (!self->characters){
         return IO_ERROR;
-    }
+    }*/
     self->input_file = input;
     self->output_file = output;
     return SUCCESS;
@@ -37,10 +42,11 @@ int init_encdec(EncDec_t *self, FILE *input, FILE *output){
 
 char get_fill_char(EncDec_t *self){
     //Obtengo el caracter de relleno ('=')
-    fseek(self->characters, FILL_CHAR_POS, SEEK_SET);
+    /*fseek(self->characters, FILL_CHAR_POS, SEEK_SET);
     char fill_character = fgetc(self->characters);
     fseek(self->characters, 0, SEEK_SET);
-    return fill_character;
+    return fill_character;*/
+    return letters[FILL_CHAR_POS];
 }
 
 void add_newline_to_output(EncDec_t *self){
@@ -57,10 +63,11 @@ void set_output(EncDec_t *self, FILE *output){
 }
 
 char encode(EncDec_t *self, unsigned int letter_index){
-    char encoded_letter = '\0';
+    /*char encoded_letter = '\0';
     fseek(self->characters, letter_index, SEEK_SET);
     fread(&encoded_letter, sizeof(char), 1, self->characters);
-    return encoded_letter;
+    return encoded_letter;*/
+    return letters[letter_index];
 }
 
 bool at_stdin_end(EncDec_t *self, char c){
@@ -136,15 +143,6 @@ void encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_
         encoded_chars[j] = encode(self, index);
     }
 
-    /*for (int k = 0; k < max_group_qty; ++k){
-        size_t pos = ftell(self->output_file);
-        if (((pos+1) % MAX_LEN == 0) && (pos > 0)){
-            add_newline_to_output(self);
-            fputc(encoded_chars[k], self->output_file);
-        }else{
-            fputc(encoded_chars[k], self->output_file);
-        }
-    }*/
     fwrite(encoded_chars, sizeof(char), max_group_qty, self->output_file);
 }
 
@@ -193,8 +191,14 @@ void decode_to_output_file(EncDec_t *self, char *letter_indexes, int padding){
 }
 
 bool issymbol(EncDec_t *self, unsigned char *c, char *index){
-    char encoded_letter = '\0';
-    fseek(self->characters, SYMBOL_POS, SEEK_SET);
+    for (int i = SYMBOL_POS; letters[i] && i < FILL_CHAR_POS; ++i){
+        if (*c == letters[i]){
+            *index = i;
+            return true;
+        }
+    }
+    return false;
+    /*fseek(self->characters, SYMBOL_POS, SEEK_SET);
     while (!feof(self->characters)) {
         encoded_letter = fgetc(self->characters);
         if (*c == encoded_letter) {
@@ -202,7 +206,7 @@ bool issymbol(EncDec_t *self, unsigned char *c, char *index){
             return true;
         }
     }
-    return false;
+    return false;*/
 }
 
 int decode(EncDec_t *self, unsigned char *letters, char fill_character){

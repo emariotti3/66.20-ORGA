@@ -8,7 +8,6 @@
 typedef enum error { INVALID_CHARACTER = 1, IO_ERROR = 2, MEMORY_ERROR = 3} Error_t;
 
 typedef struct encoder_decoder{
-    FILE *characters;
     FILE *input_file;
     FILE *output_file;
 } EncDec_t;
