@@ -12,7 +12,7 @@
 #define SYMBOL_POS 62
 #define ENCODED_GROUP_SZ 4
 #define DECODED_GROUP_SZ 3
-#define SUCCESS 0
+//#define SUCCESS 0
 #define NEW_LINE '\n'
 #define MAX_LEN 76
 
@@ -32,11 +32,10 @@ static const char letters[] = {'A','B','C','D','E','F','G','H','I','J','K','L','
 'l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','0','1','2','3','4','5',
 '6','7','8','9','+','/','='};
 
-//TODO: además de códigos de error habría que settear un mensaje del error
-//para mostrar por pantalla (strerror)
 int init_encdec(EncDec_t *self, FILE *input, FILE *output){
     self->input_file = input;
     self->output_file = output;
+    self->state = SUCCESS;
     return SUCCESS;
 }
 
@@ -65,6 +64,12 @@ bool at_file_end(EncDec_t *self, int pos, int len){
     return (self->input_file != stdin) && (pos == len);
 }
 
+bool error_ocurred(EncDec_t *self){
+    bool ioerr = ferror(self->input_file) || ferror(self->output_file);
+    self->state = ioerr ? IO_ERROR : self->state;
+    return self->state;
+}
+
 int concantenate_binary_to_int(unsigned char *characters){
     int number = 0;
     for(int i = 0; i < sizeof(int); ++i){
@@ -83,7 +88,7 @@ int file_len(FILE *file){
     return len;
 }
 
-void encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_read){
+int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_read){
     //group_qty: la cantidad de grupos de 6 bits que puedo formar
     //con los bytes que leo:
     int max_group_qty = (DECODED_GROUP_SZ * BYTE_SZ) / GROUP_SZ;
@@ -105,8 +110,11 @@ void encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_
         //archivo de caracteres posibles:
         encoded_chars[j] = encode(self, index);
     }
-
-    fwrite(encoded_chars, sizeof(char), max_group_qty, self->output_file);
+    if(!error_ocurred(self)){
+        fwrite(encoded_chars, sizeof(char), max_group_qty, self->output_file);
+        self->state = ferror(self->output_file) ? IO_ERROR : self->state;
+    }
+    return self->state;
 }
 
 int encode_text(EncDec_t *self){
@@ -116,18 +124,18 @@ int encode_text(EncDec_t *self){
 
     //Leo de a 3 bytes y codifico:
     int len = fread(read_letters, sizeof(char), DECODED_GROUP_SZ, self->input_file);
-    while(!at_stdin_end(self) && !at_file_end(self, ftell(self->input_file), input_len)){
+    while(!error_ocurred(self) && !at_stdin_end(self) && !at_file_end(self, ftell(self->input_file), input_len)){
         encode_text_to_output(self, read_letters, len);
         memset(&read_letters, '\0', sizeof(int));
         len = fread(read_letters, sizeof(char), DECODED_GROUP_SZ, self->input_file);
     }
-    if(len > 0){
-        encode_text_to_output(self, read_letters, len);
+    if(!error_ocurred(self) && (len > 0)){
+        return encode_text_to_output(self, read_letters, len);
     }
-    return SUCCESS;
+    return self->state;
 }
 
-void decode_to_output_file(EncDec_t *self, char *letter_indexes, int padding){
+int decode_to_output_file(EncDec_t *self, char *letter_indexes, int padding){
     char buff[DECODED_GROUP_SZ + 1];
     memset(buff, '\0', (DECODED_GROUP_SZ + 1)*sizeof(char));
 
@@ -142,7 +150,11 @@ void decode_to_output_file(EncDec_t *self, char *letter_indexes, int padding){
     //en el medio de los otros caracteres, este se copie
     //al archivo decodificado.
     size_t len = DECODED_GROUP_SZ - padding;
-    fwrite(buff, sizeof(char), len, self->output_file);
+    if(!error_ocurred(self)){
+        fwrite(buff, sizeof(char), len, self->output_file);
+        self->state = ferror(self->output_file) ? IO_ERROR : self->state;
+    }
+    return self->state;
 }
 
 bool issymbol(EncDec_t *self, unsigned char *c, char *index){
@@ -183,16 +195,16 @@ int decode(EncDec_t *self, unsigned char *letters, char fill_character, int coun
             continue;
         }
         if(!issymbol(self, letters +i, indexes + i)){
+            self->state = INVALID_CHARACTER;
             return INVALID_CHARACTER;
         }
     }
-    decode_to_output_file(self, indexes, padding);
-    return SUCCESS;
+    return decode_to_output_file(self, indexes, padding);
 }
 
 int decode_text(EncDec_t *self){
     int input_len = file_len(self->input_file);
-    int result = SUCCESS;
+    self->state = SUCCESS;
     char fill_character = get_fill_char(self);
     unsigned char read_letters[ENCODED_GROUP_SZ + 1];
     memset(read_letters, '\0', (ENCODED_GROUP_SZ + 1)*sizeof(char));
@@ -201,13 +213,13 @@ int decode_text(EncDec_t *self){
     //de relleno por si no se completa la cantidad de bytes esperados.
     //Esto solo agrega un '\0' al resultado decodificado.
     int qty_read = fread(read_letters, sizeof(char), ENCODED_GROUP_SZ, self->input_file);
-    while((result == SUCCESS) && !at_stdin_end(self) && !at_file_end(self, ftell(self->input_file), input_len)){
-        result = result || decode(self, read_letters, fill_character, ENCODED_GROUP_SZ);
+    while(!error_ocurred(self) && !at_stdin_end(self) && !at_file_end(self, ftell(self->input_file), input_len)){
+        decode(self, read_letters, fill_character, ENCODED_GROUP_SZ);
         memset(read_letters, '\0', ENCODED_GROUP_SZ*sizeof(char));
         qty_read = fread(read_letters, sizeof(char), ENCODED_GROUP_SZ, self->input_file);
     }
-    if (qty_read > 0 && result == SUCCESS){
+    if (!error_ocurred(self) && (qty_read > 0)){
         return decode(self, read_letters, fill_character, qty_read);
     }
-    return result;
+    return self->state;
 }

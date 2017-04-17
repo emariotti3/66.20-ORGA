@@ -5,11 +5,12 @@
 #ifndef ENCDEC_H
 #define ENCDEC_H
 
-typedef enum error { INVALID_CHARACTER = 1, IO_ERROR = 2, MEMORY_ERROR = 3} Error_t;
+typedef enum error {SUCCESS, INVALID_CHARACTER, IO_ERROR, MEMORY_ERROR} Error_t;
 
 typedef struct encoder_decoder{
     FILE *input_file;
     FILE *output_file;
+    Error_t state;
 } EncDec_t;
 
 //Inicializa al EncDec_t con un file descriptor 'input' de donde
@@ -36,5 +37,9 @@ void set_input(EncDec_t *self, FILE *input);
 //Recibe un puntero a FILE y reemplaza el archivo de
 //salida actual por el recibido.
 void set_output(EncDec_t *self, FILE *output);
+
+//Recibe EncDec_t. Devuelve true si ocurrio
+//un error durante la ultima operacion realizada.
+bool error_ocurred(EncDec_t *self);
 
 #endif //ENCDEC_H
