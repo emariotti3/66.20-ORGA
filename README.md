@@ -8,7 +8,7 @@ Link al informe: https://es.sharelatex.com/project/58d56aa71ae6dbb529745d0d
 
 Programa:
 
-$ gcc -std=c99 -g -Wall main.c -o tp0
+$ make
 
 $ ./tp0
 
