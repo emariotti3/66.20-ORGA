@@ -96,14 +96,14 @@ void set_output(EncDec_t *self, int output){
 char encode(EncDec_t *self, unsigned int letter_index){
     return letters[letter_index];
 }
-
+/*
 bool at_stdin_end(EncDec_t *self){
     return (self->input_file == 0) && feof(self->input_file);
 }
 
 bool at_file_end(EncDec_t *self, int pos, int len){
     return (self->input_file != 0) && (pos == len);
-}
+}*/
 
 int concantenate_binary_to_int(unsigned char *characters){
     int number = 0;
@@ -112,7 +112,7 @@ int concantenate_binary_to_int(unsigned char *characters){
     }
     return number;
 }
-
+/*
 int file_len(int fd){
     int len = 0, pos = lseek(fd,0,SEEK_CUR);
     if (fd != 0){ //fd!=stdin
@@ -121,7 +121,7 @@ int file_len(int fd){
         lseek(fd, pos, SEEK_SET);
     }
     return len;
-}
+}*/
 
 int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_read){
     //group_qty: la cantidad de grupos de 6 bits que puedo formar
@@ -155,19 +155,19 @@ int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_r
 }
 
 int encode_text(EncDec_t *self){
-    int input_len = file_len(self->input_file);
+    //int input_len = file_len(self->input_file);
     unsigned char read_letters[sizeof(int)];
     memset(&read_letters, '\0', sizeof(int));
 
     //Leo de a 3 bytes y codifico:
-    int len = read(self->input_file, read_letters, DECODED_GROUP_SZ);
-    while((self->state==SUCCESS) && !at_stdin_end(self) && !at_file_end(self, lseek(self->input_file,0,SEEK_CUR), input_len)){
-        encode_text_to_output(self, read_letters, len);
+    int qty_read = read(self->input_file, read_letters, DECODED_GROUP_SZ);
+    while((self->state==SUCCESS) && (qty_read == DECODED_GROUP_SZ)){ //&& !at_stdin_end(self) && !at_file_end(self, lseek(self->input_file,0,SEEK_CUR), input_len)){
+        encode_text_to_output(self, read_letters, qty_read);
         memset(&read_letters, '\0', sizeof(int));
-        len = read(self->input_file, read_letters, DECODED_GROUP_SZ);
+        qty_read = read(self->input_file, read_letters, DECODED_GROUP_SZ);
     }
-    if((self->state==SUCCESS) && (len > 0)){
-        return encode_text_to_output(self, read_letters, len);
+    if((self->state==SUCCESS) && (qty_read > 0)){
+        return encode_text_to_output(self, read_letters, qty_read);
     }
     return self->state;
 }
@@ -242,7 +242,7 @@ int decode(EncDec_t *self, unsigned char *letters, char fill_character, int coun
 }
 
 int decode_text(EncDec_t *self){
-    int input_len = file_len(self->input_file);
+    //int input_len = file_len(self->input_file);
     self->state = SUCCESS;
     char fill_character = get_fill_char(self);
     unsigned char read_letters[ENCODED_GROUP_SZ + 1];
@@ -252,7 +252,7 @@ int decode_text(EncDec_t *self){
     //de relleno por si no se completa la cantidad de bytes esperados.
     //Esto solo agrega un '\0' al resultado decodificado.
     int qty_read = read(self->input_file, read_letters, ENCODED_GROUP_SZ);
-    while((self->state==SUCCESS) && !at_stdin_end(self) && !at_file_end(self, lseek(self->input_file, 0, SEEK_CUR), input_len)){
+    while((self->state==SUCCESS) && (qty_read == ENCODED_GROUP_SZ)){// && !at_stdin_end(self) && !at_file_end(self, lseek(self->input_file, 0, SEEK_CUR), input_len)){
         decode(self, read_letters, fill_character, ENCODED_GROUP_SZ);
         memset(read_letters, '\0', ENCODED_GROUP_SZ*sizeof(char));
         qty_read = read(self->input_file, read_letters, ENCODED_GROUP_SZ);
