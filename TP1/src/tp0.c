@@ -56,7 +56,7 @@ void show_version(){
 }
 
 int main(int argc, char* argv[]){
-
+	saludar();
 	bool help, version, output, input, decode; //To know what to do
 	help = version = output = input = decode = false; //They all start in false
 	char *input_file, *output_file;
