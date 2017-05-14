@@ -89,7 +89,7 @@ int main(int argc, char* argv[]){
 	}
 
 	int exit = 0;
-	printf("%s\n",output_file);
+	
 	if (help) {
 		show_help();
 		return exit; //show and quit
@@ -109,11 +109,12 @@ int main(int argc, char* argv[]){
 		return errno;
 	}
 		
-	if (decode)
+	if (decode){
 		exit = base64_decode(fd_input,fd_output);  //Chequear si devuelven un código de error
-	else
+	}
+	else{
 		exit = base64_encode(fd_input,fd_output);//Chequear si devuelven un código de error
-	
+	}
 	/*VERIFICAR SI FALTARÍA ALGÚN FREE*/
 	return exit;
 }
