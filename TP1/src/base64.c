@@ -93,9 +93,10 @@ void set_output(EncDec_t *self, int output){
     self->output_file = output;
 }
 
-char encode(EncDec_t *self, unsigned int letter_index){
+/*char encode(EncDec_t *self, unsigned int letter_index){
     return letters[letter_index];
-}
+}*/
+
 /*
 bool at_stdin_end(EncDec_t *self){
     return (self->input_file == 0) && feof(self->input_file);
@@ -143,7 +144,7 @@ int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_r
         index = (read_bytes >> shift_count) & MASK;
         //Uso el index para obtener un caracter del
         //archivo de caracteres posibles:
-        encoded_chars[j] = encode(self, index);
+        encoded_chars[j] = encode(index);
     }
     if(self->state == SUCCESS){
         int resu = write(self->output_file, encoded_chars, max_group_qty);
