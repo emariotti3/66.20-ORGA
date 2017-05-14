@@ -73,12 +73,12 @@ int main(int argc, char* argv[]){
 				help = true;
 		}
 		if (strcmp(arg,"-o")==0 || strcmp(arg,"--output")==0){
-				output_file = argv[i++];
+				output_file = argv[++i];
 				if (strcmp(output_file,"-")!=0)
 					output = true; // - es std. No debo hacer el open
 		}
 		if (strcmp(arg,"-i")==0 || strcmp(arg,"--input")==0){
-				input_file = argv[i++];
+				input_file = argv[++i];
 				if (strcmp(input_file,"-")!=0)
 					input = true; // - es std. No debo hacer el open
 		}
