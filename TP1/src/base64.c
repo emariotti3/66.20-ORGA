@@ -80,10 +80,10 @@ int init_encdec(EncDec_t *self, int fdin, int fdout){
     return self->state;
 }
 
-char get_fill_char(EncDec_t *self){
+/*char get_fill_char(EncDec_t *self){
     //Obtengo el caracter de relleno ('=')
     return letters[FILL_CHAR_POS];
-}
+}*/
 
 void set_input(EncDec_t *self, int input){
     self->input_file = input;
@@ -133,7 +133,7 @@ int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_r
     unsigned int index = 0, shift_count = 0;
     unsigned char encoded_chars[group_qty + 1];
     memset(&encoded_chars, '\0', (group_qty + 1)*sizeof(char));
-    memset(&encoded_chars, get_fill_char(self), max_group_qty*sizeof(char));
+    memset(&encoded_chars, get_fill_char(), max_group_qty*sizeof(char));
 
     read_bytes = concantenate_binary_to_int(read_letters);
 
@@ -244,7 +244,7 @@ int decode(EncDec_t *self, unsigned char *letters, char fill_character, int coun
 int decode_text(EncDec_t *self){
     //int input_len = file_len(self->input_file);
     self->state = SUCCESS;
-    char fill_character = get_fill_char(self);
+    char fill_character = get_fill_char();
     unsigned char read_letters[ENCODED_GROUP_SZ + 1];
     memset(read_letters, '\0', (ENCODED_GROUP_SZ + 1)*sizeof(char));
 
