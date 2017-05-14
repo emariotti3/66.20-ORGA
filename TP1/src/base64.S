@@ -130,4 +130,30 @@ get_fill_char:
 	move v0,t1  #cargo el igual en v0 para retornarlo
 	j	ra
 .end	get_fill_char
+
+
+.align	2
+.ent encode
+.globl encode
+
+encode:
+	.frame $fp,8,ra			
+	.set noreorder
+	.cpload	t9
+	.set reorder
+	subu sp,sp,8
+	.cprestore 4
+	sw	$fp,0(sp)
+	move $fp,sp
+	
+	la	v0,letters
+	addu v0,a0,v0
+	lb	v0,0(v0) #letter en v0
+	
+	lw $fp,0(sp)
+	lw gp,4(sp)
+	addu sp,sp,8
+	
+	j	ra
+.end encode
 	
