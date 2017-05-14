@@ -84,7 +84,7 @@ int main(int argc, char* argv[]){
 					input = true; // - es std. No debo hacer el open
 		}
 		if (strcmp(arg,"-a")==0 || strcmp(arg,"--action")==0){
-				if (strcmp(argv[i++],"decode")==0)
+				if (strcmp(argv[++i],"decode")==0)
 					decode = true;
 		}
 	}
