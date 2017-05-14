@@ -108,6 +108,95 @@ letters:
 	
 .text
 .align	2
-init_encdec:
-	.frame	$fp,16,$31
-	
+
+BASE64_SF_SIZE = 48
+BASE64_RA = 40
+BASE64_FP = 36
+BASE64_GP = 32
+
+BASE64_a3_OFF = 60
+BASE64_a2_OFF = 56
+BASE64_a1_OFF = 52
+BASE64_a0_OFF = 48
+
+STRUCT_ENCDEC_SZ = 16	#Tamano en bytes del struct EncDec_t + padding
+BASE64_STRUCT_OFF = 16	#Direccion de inicio del struct en el stack
+
+base64_encode:
+	.frame	$fp, BASE64_SF_SIZE, ra 	#El stack frame tiene un tamano igual a BASE64_SF_SIZE
+	.set noreorder
+	.cpload	t9
+	.set reorder
+	subu $sp,$sp, BASE64_SF_SIZE
+
+	.cprestore BASE64_GP				#Guardo el gp(global pointer) actual
+	sw $fp, BASE64_FP($sp)				#Guardo el $fp(frame pointer) actual
+	sw ra, BASE64_RA($sp)				#Guardo el ra(return address) actual.
+
+	move $fp, $sp						#Muevo el $fp a la base del stack frame.
+
+	sw a0, BASE64_a0_OFF($fp)			#Guardo los argumentos en el ABA de la callee.
+	sw a1, BASE64_a1_OFF($fp)
+	sw a2, BASE64_a2_OFF($fp)
+	sw a3, BASE64_a3_OFF($fp)
+
+	addiu a0, $fp, BASE64_STRUCT_OFF	#Regs[a0] <-- Direccion de inicio de variable EncDec_t encdec.
+	lw a1, BASE64_a0_OFF($fp)			#Regs[a1] <-- infd.
+	lw a2, BASE64_a1_OFF($fp)			#Regs[a2] <-- outfd.
+
+	la t9, init_encdec
+	jalr t9								#Llamo a la funcion init_encdec
+
+	addiu a0, $fp, BASE6_STRUCT_OFF	#Regs[a0] <-- Direccion de inicio de variable EncDec_t encdec.
+	la t9, encode_text
+	jalr t9								#Llamo a la funcion encode_text
+
+	lw gp, BASE6_GP($sp)				#Restauro el gp(global pointer).
+	lw ra, BASE6_RA($sp)				#Restauro el ra(return address).
+	lw $fp, BASE6_FP($sp)				#Restauro el $fp(frame pointer).
+	addiu $sp, $sp, BASE6_SF_SIZE 		#Restauro el $sp(stack pointer).
+
+	jr ra 								#Retorno. 
+	.end	base64_encode
+	.size	base64_encode, .-base64_encode
+
+base64_decode:
+	.frame	$fp, BASE64_SF_SIZE, ra 	#El stack frame tiene un tamano igual a BASE64_SF_SIZE
+	.set noreorder
+	.cpload	t9
+	.set reorder
+	subu $sp,$sp, BASE64_SF_SIZE
+
+	.cprestore BASE64_GP				#Guardo el gp(global pointer) actual
+	sw $fp, BASE64_FP($sp)				#Guardo el $fp(frame pointer) actual
+	sw ra, BASE64_RA($sp)				#Guardo el ra(return address) actual.
+
+	move $fp, $sp						#Muevo el $fp a la base del stack frame.
+
+	sw a0, BASE64_a0_OFF($fp)			#Guardo los argumentos en el ABA de la callee.
+	sw a1, BASE64_a1_OFF($fp)
+	sw a2, BASE64_a2_OFF($fp)
+	sw a3, BASE64_a3_OFF($fp)
+
+	addiu a0, $fp, BASE64_STRUCT_OFF	#Regs[a0] <-- Direccion de inicio de variable EncDec_t encdec.
+	lw a1, BASE64_a0_OFF($fp)			#Regs[a1] <-- infd.
+	lw a2, BASE64_a1_OFF($fp)			#Regs[a2] <-- outfd.
+
+	la t9, init_encdec
+	jalr t9								#Llamo a la funcion init_encdec
+
+	addiu a0, $fp, BASE6_STRUCT_OFF		#Regs[a0] <-- Direccion de inicio de variable EncDec_t encdec.
+	la t9, decode_text
+	jalr t9								#Llamo a la funcion decode_text
+
+	lw gp, BASE6_GP($sp)				#Restauro el gp(global pointer).
+	lw ra, BASE6_RA($sp)				#Restauro el ra(return address).
+	lw $fp, BASE6_FP($sp)				#Restauro el $fp(frame pointer).
+	addiu $sp, $sp, BASE6_SF_SIZE 		#Restauro el $sp(stack pointer).
+
+	jr ra 								#Retorno. 
+	.end	base64_decode
+	.size	base64_decode, .-base64_decode
+
+
+

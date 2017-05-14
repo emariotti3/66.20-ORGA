@@ -96,14 +96,6 @@ void set_output(EncDec_t *self, int output){
 char encode(EncDec_t *self, unsigned int letter_index){
     return letters[letter_index];
 }
-/*
-bool at_stdin_end(EncDec_t *self){
-    return (self->input_file == 0) && feof(self->input_file);
-}
-
-bool at_file_end(EncDec_t *self, int pos, int len){
-    return (self->input_file != 0) && (pos == len);
-}*/
 
 int concantenate_binary_to_int(unsigned char *characters){
     int number = 0;
@@ -112,16 +104,6 @@ int concantenate_binary_to_int(unsigned char *characters){
     }
     return number;
 }
-/*
-int file_len(int fd){
-    int len = 0, pos = lseek(fd,0,SEEK_CUR);
-    if (fd != 0){ //fd!=stdin
-        lseek(fd, 0, SEEK_END);
-        len = lseek(fd,0,SEEK_CUR);
-        lseek(fd, pos, SEEK_SET);
-    }
-    return len;
-}*/
 
 int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_read){
     //group_qty: la cantidad de grupos de 6 bits que puedo formar
@@ -265,7 +247,7 @@ int decode_text(EncDec_t *self){
 
 /***********************************************************************************/
 
-int base64_encode(int infd, int outfd){
+/*int base64_encode(int infd, int outfd){
 	EncDec_t encdec;
 	init_encdec(&encdec, infd, outfd);
 	return encode_text(&encdec);
@@ -275,5 +257,5 @@ int base64_decode(int infd, int outfd){
 	EncDec_t encdec;
 	init_encdec(&encdec, infd, outfd);
 	return decode_text(&encdec);
-}
+}*/
 
