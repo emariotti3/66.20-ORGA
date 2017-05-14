@@ -21,7 +21,7 @@ saludar: .frame $fp,16,ra
 		
 		
 		li v0,SYS_write
-		li a0,1
+		li a0,1 #stdout
 		la a1,str
 		li a2,5
         syscall
