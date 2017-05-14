@@ -1,16 +1,15 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "base64.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <getopt.h>
+#include <string.h>
+#include <fcntl.h>
+#include <errno.h>
 
-#define COMPARATOR 0
-#define EXIT_SUCCESS 0
 #define ERROR_ACTION 1
-#define ENCODE 2
-#define DECODE 3
 #define BUFF_SZ 100
-#define VERSION "version.txt"
-#define HELP "help.txt"
 
 int print_file(char *fname){
     char buff[BUFF_SZ + 1];
@@ -25,95 +24,98 @@ int print_file(char *fname){
     return EXIT_SUCCESS;
 }
 
-int show_version(){
-    return print_file(VERSION);
-}
-
-int show_help(){
-    return print_file(HELP);
-}
-
 bool free_mem(FILE* input, FILE* output){
     return (fclose(input) != EOF) && (fclose(output) != EOF);
 }
 
-int menu(int argc, char** argv, FILE **input, FILE **output){
-    int exit = ENCODE;
+int show_help(){
+		printf("Usage: \n \
+		tp0 -h \n \
+		tp0 -V \n \
+		tp0 [options] \n \
+		Options: \n \
+		-V, --version Print version and quit.\n \
+		-h, --help Print this information.\n \
+		-i, --input Location of the input file.\n \
+		-o, --output Location of the output file.\n \
+		-a, --action Program action: encode (default) or decode.\n \
+		Examples:\n \
+		tp0 -a encode -i ~/input -o ~/output\n \
+		tp0 -a decode \n");
+}
 
-    for (int counter = 1; counter < argc; counter++){
-
-        if (strncmp(argv[counter],"-h", strlen("-h")) == COMPARATOR || strncmp(argv[counter],"--help",strlen("--help")) == COMPARATOR){
-            show_help();
-            return EXIT_SUCCESS;
-        }
-        else if (strncmp(argv[counter],"-V", strlen("-V")) == COMPARATOR || strncmp(argv[counter],"--version", strlen("--version")) == COMPARATOR){
-            show_version();
-            return EXIT_SUCCESS;
-        }
-        else if (strncmp(argv[counter],"-a",strlen("-a")) == COMPARATOR || strncmp(argv[counter],"--action",strlen("--action")) == COMPARATOR){
-            counter++;
-            if (strncmp(argv[counter],"decode", strlen("decode")) == COMPARATOR){
-                exit = DECODE;
-            }
-            else if (strncmp(argv[counter],"encode", strlen("encode")) == COMPARATOR){
-                exit = ENCODE;
-            }
-            else{
-                return ERROR_ACTION;
-            }
-        }
-        else if (strncmp(argv[counter],"-o",strlen("-o")) == COMPARATOR || strncmp(argv[counter],"--output",strlen("--output")) == COMPARATOR){
-            counter++;
-            if (strncmp(argv[counter],"-",strlen("-")) != COMPARATOR){
-                FILE* salida = fopen(argv[counter],"wb+");
-                if (!salida){
-					printf("Error de apertura de archivo de salida. No se puede continuar.\n");
-					return -1;
-				}
-				else{
-					*output = salida;
-				}
-            }
-        }
-        else if (strncmp(argv[counter],"-i",strlen("-i")) == COMPARATOR || strncmp(argv[counter],"--input",strlen("--input")) == COMPARATOR){
-            counter++;
-            if (strncmp(argv[counter],"-",strlen("-")) != COMPARATOR){
-                FILE* entrada = fopen(argv[counter],"rb+");
-                if (!entrada){
-					printf("Error de apertura de archivo de entrada. No se puede continuar.\n");
-					return -1;
-				}
-				else{
-					*input = entrada;
-				}            
-            
-            }
-        }
-    }
-    return exit;
+int show_version(){
+	printf("Organizacion de Computadoras - TP0 \n \
+			Encoder/Decoder Base64 - v2.0 \n \
+			Group Members:\n \
+			Gonzalez Perez, Ailen Padron: 97043\n \
+			Mariotti, Maria Eugenia Padron: 96260\n \
+			Raña, Cristian Ezequiel Padron: 95457\n");
 }
 
 int main(int argc, char* argv[]){
-    /*EncDec_t encdec;
-    FILE* input = stdin;
-    FILE* output = stdout;
 
-    int action_code = menu(argc, argv, &input, &output);
-    if (action_code == -1){
-			return -1;
+	bool help, version, output, input, decode; //To know what to do
+	help = version = output = input = decode = false; //They all start in false
+	char *input_file, *output_file;
+	input_file = output_file = NULL; //To save the file names. If 0 -> standar
+	int fd_input, fd_output;
+	fd_input = 0; //file descriptor de stdin es 0. Chequear si funciona
+	fd_output = 1; // file descriptor de stdout es 1. Chequear si funciona
+
+	for (int i=0; i<argc; i++){
+		char *arg = argv[i];
+		if (strcmp(arg,"-v")==0 || strcmp(arg,"--version")==0){
+				version = true;
+		}
+		if (strcmp(arg,"-h")==0 || strcmp(arg,"--help")==0){
+				help = true;
+		}
+		if (strcmp(arg,"-o")==0 || strcmp(arg,"--output")==0){
+				output_file = argv[i++];
+				if (strcmp(output_file,"-")!=0)
+					output = true; // - es std. No debo hacer el open
+		}
+		if (strcmp(arg,"-i")==0 || strcmp(arg,"--input")==0){
+				input_file = argv[i++];
+				if (strcmp(input_file,"-")!=0)
+					input = true; // - es std. No debo hacer el open
+		}
+		if (strcmp(arg,"-a")==0 || strcmp(arg,"--action")==0){
+				if (strcmp(argv[i++],"decode")==0)
+					decode = true;
+		}
 	}
-    init_encdec(&encdec, input, output);
 
-    switch (action_code){
-        case ENCODE:
-            encode_text(&encdec);
-            break;
-        case DECODE:
-            decode_text(&encdec);
-            break;
-        case EXIT_SUCCESS:
-            return EXIT_SUCCESS;
-    }
-    return free_mem(input, output);*/
+	int exit = 0;
+	
+	if (help) {
+		show_help();
+		return exit; //show and quit
+	}
+	if (version) {
+		show_version();
+		return exit; //show and quit
+	}
+	if (input) //si hay input, lo abro
+		fd_input = open(input_file, O_RDONLY); //obtengo el fd	de input (sólo lectura)	
+	if (output)
+		fd_output = fopen(output_file, O_RDWR); //obtengo el fd	(podría leer y escribir)
+	
+	if (fd_output == 0 || fd_input == -1){ //
+		printf("Falla en apertura de archivos. Intente nuevamente. \n");
+		return errno;
+	}
+		
+	/*if (decode)
+		exit = b64_decode(fd_input,fd_output);  //Chequear si devuelven un código de error
+	else
+		exit = b64_encode(fd_input,fd_output);//Chequear si devuelven un código de error
+	*/
+	
+	/*VERIFICAR SI FALTARÍA ALGÚN FREE*/
+	return exit;
 }
+
+
 
