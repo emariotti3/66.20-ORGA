@@ -106,13 +106,13 @@ bool at_file_end(EncDec_t *self, int pos, int len){
     return (self->input_file != 0) && (pos == len);
 }*/
 
-int concantenate_binary_to_int(unsigned char *characters){
+/*int concantenate_binary_to_int(unsigned char *characters){
     int number = 0;
     for(int i = 0; i < sizeof(int); ++i){
         number = number | (characters[i] << (sizeof(int) -1 -i)*BYTE_SZ);
     }
     return number;
-}
+}*/
 /*
 int file_len(int fd){
     int len = 0, pos = lseek(fd,0,SEEK_CUR);
