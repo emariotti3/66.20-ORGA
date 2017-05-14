@@ -89,7 +89,7 @@ int main(int argc, char* argv[]){
 	}
 
 	int exit = 0;
-	
+	printf("%s\n",output_file);
 	if (help) {
 		show_help();
 		return exit; //show and quit
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]){
 	if (input) //si hay input, lo abro
 		fd_input = open(input_file, O_RDONLY); //obtengo el fd	de input (sólo lectura)	
 	if (output)
-		fd_output = open(output_file, O_RDWR/*, S_IWUSR*/); //obtengo el fd	(podría leer y escribir)
+		fd_output = open(output_file, O_RDWR|O_CREAT/*, S_IWUSR*/); //obtengo el fd	(podría leer y escribir)
 												//chequear si tercer campo hace falta
 	
 	if (fd_output == -1 || fd_input == -1){ //
