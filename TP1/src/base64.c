@@ -197,7 +197,7 @@ int decode_to_output_file(EncDec_t *self, char *letter_indexes, int padding){
     return self->state;
 }
 
-bool issymbol(EncDec_t *self, unsigned char *c, char *index){
+/*bool issymbol(EncDec_t *self, unsigned char *c, char *index){
     for (int i = SYMBOL_POS; letters[i] && i < FILL_CHAR_POS; ++i){
         if (*c == letters[i]){
             *index = i;
@@ -205,7 +205,7 @@ bool issymbol(EncDec_t *self, unsigned char *c, char *index){
         }
     }
     return false;
-}
+}*/
 
 int decode(EncDec_t *self, unsigned char *letters, char fill_character, int count){
     char indexes[ENCODED_GROUP_SZ + 1];
@@ -234,7 +234,7 @@ int decode(EncDec_t *self, unsigned char *letters, char fill_character, int coun
             indexes[i] = letters[i] + DELTA_NUM;
             continue;
         }
-        if(!issymbol(self, letters +i, indexes + i)){
+        if(!issymbol(letters +i, indexes + i)){
             self->state = INVALID_CHARACTER;
             return INVALID_CHARACTER;
         }
