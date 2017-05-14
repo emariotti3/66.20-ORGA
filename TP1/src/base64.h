@@ -11,6 +11,5 @@ decodifica los leido desde infd en base64
 y lo escribe en el file descriptor outfd*/
 int base64_decode(int infd, int outfd);
 
-extern void saludar();
+extern int saludar();
 #endif //BASE64_H
-
