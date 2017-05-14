@@ -1,14 +1,6 @@
 #ifndef BASE64_H
 #define BASE64_H
 
-#ifdef __STRICT_ANSI__
-#undef __STRICT_ANSI__
-#include <cstdio>
-#define __STRICT_ANSI__
-#else
-#include <cstdio>
-#endif
-
 /*Recibe dos file descriptors infd y outfd, 
 codifica los leido desde infd a base64 
 y lo escribe en el file descriptor outfd*/
