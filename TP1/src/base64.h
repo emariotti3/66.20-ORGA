@@ -17,4 +17,6 @@ extern char get_fill_char();
 
 extern char encode(unsigned int letter_index);
 
+int concantenate_binary_to_int(unsigned char *characters);
+
 #endif //BASE64_H
