@@ -109,11 +109,10 @@ int main(int argc, char* argv[]){
 		return errno;
 	}
 		
-	/*if (decode)
-		exit = b64_decode(fd_input,fd_output);  //Chequear si devuelven un código de error
+	if (decode)
+		exit = base64_decode(fd_input,fd_output);  //Chequear si devuelven un código de error
 	else
-		exit = b64_encode(fd_input,fd_output);//Chequear si devuelven un código de error
-	*/
+		exit = base64_encode(fd_input,fd_output);//Chequear si devuelven un código de error
 	
 	/*VERIFICAR SI FALTARÍA ALGÚN FREE*/
 	return exit;
