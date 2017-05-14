@@ -80,10 +80,10 @@ int init_encdec(EncDec_t *self, int fdin, int fdout){
     return self->state;
 }
 
-char get_fill_char(EncDec_t *self){
+/*char get_fill_char(EncDec_t *self){
     //Obtengo el caracter de relleno ('=')
     return letters[FILL_CHAR_POS];
-}
+}*/
 
 void set_input(EncDec_t *self, int input){
     self->input_file = input;
@@ -93,17 +93,44 @@ void set_output(EncDec_t *self, int output){
     self->output_file = output;
 }
 
-char encode(EncDec_t *self, unsigned int letter_index){
+/*char encode(EncDec_t *self, unsigned int letter_index){
     return letters[letter_index];
+<<<<<<< HEAD
+}
+=======
+}*/
+
+/*
+bool at_stdin_end(EncDec_t *self){
+    return (self->input_file == 0) && feof(self->input_file);
 }
 
-int concantenate_binary_to_int(unsigned char *characters){
+bool at_file_end(EncDec_t *self, int pos, int len){
+    return (self->input_file != 0) && (pos == len);
+}*/
+>>>>>>> 005698e4a76a7d3d799f0c7d15782062f7a539b8
+
+/*int concantenate_binary_to_int(unsigned char *characters){
     int number = 0;
     for(int i = 0; i < sizeof(int); ++i){
         number = number | (characters[i] << (sizeof(int) -1 -i)*BYTE_SZ);
     }
     return number;
+<<<<<<< HEAD
 }
+=======
+}*/
+/*
+int file_len(int fd){
+    int len = 0, pos = lseek(fd,0,SEEK_CUR);
+    if (fd != 0){ //fd!=stdin
+        lseek(fd, 0, SEEK_END);
+        len = lseek(fd,0,SEEK_CUR);
+        lseek(fd, pos, SEEK_SET);
+    }
+    return len;
+}*/
+>>>>>>> 005698e4a76a7d3d799f0c7d15782062f7a539b8
 
 int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_read){
     //group_qty: la cantidad de grupos de 6 bits que puedo formar
@@ -115,7 +142,7 @@ int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_r
     unsigned int index = 0, shift_count = 0;
     unsigned char encoded_chars[group_qty + 1];
     memset(&encoded_chars, '\0', (group_qty + 1)*sizeof(char));
-    memset(&encoded_chars, get_fill_char(self), max_group_qty*sizeof(char));
+    memset(&encoded_chars, get_fill_char(), max_group_qty*sizeof(char));
 
     read_bytes = concantenate_binary_to_int(read_letters);
 
@@ -125,7 +152,7 @@ int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_r
         index = (read_bytes >> shift_count) & MASK;
         //Uso el index para obtener un caracter del
         //archivo de caracteres posibles:
-        encoded_chars[j] = encode(self, index);
+        encoded_chars[j] = encode(index);
     }
     if(self->state == SUCCESS){
         int resu = write(self->output_file, encoded_chars, max_group_qty);
@@ -178,7 +205,7 @@ int decode_to_output_file(EncDec_t *self, char *letter_indexes, int padding){
     return self->state;
 }
 
-bool issymbol(EncDec_t *self, unsigned char *c, char *index){
+/*bool issymbol(EncDec_t *self, unsigned char *c, char *index){
     for (int i = SYMBOL_POS; letters[i] && i < FILL_CHAR_POS; ++i){
         if (*c == letters[i]){
             *index = i;
@@ -186,7 +213,7 @@ bool issymbol(EncDec_t *self, unsigned char *c, char *index){
         }
     }
     return false;
-}
+}*/
 
 int decode(EncDec_t *self, unsigned char *letters, char fill_character, int count){
     char indexes[ENCODED_GROUP_SZ + 1];
@@ -215,7 +242,7 @@ int decode(EncDec_t *self, unsigned char *letters, char fill_character, int coun
             indexes[i] = letters[i] + DELTA_NUM;
             continue;
         }
-        if(!issymbol(self, letters +i, indexes + i)){
+        if(!issymbol(letters +i, indexes + i)){
             self->state = INVALID_CHARACTER;
             return INVALID_CHARACTER;
         }
@@ -226,7 +253,7 @@ int decode(EncDec_t *self, unsigned char *letters, char fill_character, int coun
 int decode_text(EncDec_t *self){
     //int input_len = file_len(self->input_file);
     self->state = SUCCESS;
-    char fill_character = get_fill_char(self);
+    char fill_character = get_fill_char();
     unsigned char read_letters[ENCODED_GROUP_SZ + 1];
     memset(read_letters, '\0', (ENCODED_GROUP_SZ + 1)*sizeof(char));
 
