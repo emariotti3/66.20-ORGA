@@ -29,7 +29,7 @@ bool free_mem(FILE* input, FILE* output){
     return (fclose(input) != EOF) && (fclose(output) != EOF);
 }
 
-int show_help(){
+void show_help(){
 		printf("Usage: \n \
 		tp0 -h \n \
 		tp0 -V \n \
@@ -45,7 +45,7 @@ int show_help(){
 		tp0 -a decode \n");
 }
 
-int show_version(){
+void show_version(){
 	printf("Organizacion de Computadoras - TP0 \n \
 			Encoder/Decoder Base64 - v2.0 \n \
 			Group Members:\n \
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]){
 	if (input) //si hay input, lo abro
 		fd_input = open(input_file, O_RDONLY); //obtengo el fd	de input (sólo lectura)	
 	if (output)
-		fd_output = open(output_file, O_RDWR, /*S_IWUSR*/); //obtengo el fd	(podría leer y escribir)
+		fd_output = open(output_file, O_RDWR/*, S_IWUSR*/); //obtengo el fd	(podría leer y escribir)
 												//chequear si tercer campo hace falta
 	
 	if (fd_output == -1 || fd_input == -1){ //
