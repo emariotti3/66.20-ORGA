@@ -48,3 +48,6 @@ letters:
 	.byte '3', .byte '4', .byte '5', .byte '6', .byte '7', .byte '8', .byte '9', .byte '+', .byte '/', .byte '='
 .text
 .align	2
+init_encdec:
+	.frame	$fp,16,$31
+	
