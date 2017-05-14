@@ -15,4 +15,6 @@ extern int saludar();
 
 extern char get_fill_char();
 
+extern char encode(unsigned int letter_index);
+
 #endif //BASE64_H
