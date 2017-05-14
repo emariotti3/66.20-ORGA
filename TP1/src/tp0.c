@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "encoder_decoder_t.h"
+#include "base64.h"
 
 #define COMPARATOR 0
 #define EXIT_SUCCESS 0
@@ -94,7 +94,7 @@ int menu(int argc, char** argv, FILE **input, FILE **output){
 }
 
 int main(int argc, char* argv[]){
-    EncDec_t encdec;
+    /*EncDec_t encdec;
     FILE* input = stdin;
     FILE* output = stdout;
 
@@ -114,6 +114,6 @@ int main(int argc, char* argv[]){
         case EXIT_SUCCESS:
             return EXIT_SUCCESS;
     }
-    return free_mem(input, output);
+    return free_mem(input, output);*/
 }
 

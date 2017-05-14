@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -o0 -g -Wall -pedantic -std=c99
 
-OBJECTS = encoder_decoder_t.o
+OBJECTS = base64.o
 EXEC = tp0
 
 VALGRIND = valgrind --track-origins=yes --leak-check=full
@@ -9,8 +9,8 @@ VALGRIND-V = $(VALGRIND) -v
 
 all: $(EXEC)
 
-encoder_decoder_t.o: encoder_decoder_t.c encoder_decoder_t.h
-	$(CC) $(CFLAGS) -c encoder_decoder_t.c -o encoder_decoder_t.o
+base64.o: base64.c base64.h
+	$(CC) $(CFLAGS) -c base64.c -o base64.o
 
 $(EXEC): $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) tp0.c -o $(EXEC) -lm
