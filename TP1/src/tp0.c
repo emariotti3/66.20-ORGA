@@ -7,6 +7,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 
 #define ERROR_ACTION 1
@@ -101,7 +102,7 @@ int main(int argc, char* argv[]){
 	if (input) //si hay input, lo abro
 		fd_input = open(input_file, O_RDONLY); //obtengo el fd	de input (sólo lectura)	
 	if (output)
-		fd_output = open(output_file, O_RDWR|O_CREAT/*, S_IWUSR*/); //obtengo el fd	(podría leer y escribir)
+		fd_output = open(output_file, O_RDWR|O_CREAT, S_IRWXU); //obtengo el fd	(podría leer y escribir)
 												//chequear si tercer campo hace falta
 	
 	if (fd_output == -1 || fd_input == -1){ //
@@ -116,6 +117,8 @@ int main(int argc, char* argv[]){
 		exit = base64_encode(fd_input,fd_output);//Chequear si devuelven un código de error
 	}
 	/*VERIFICAR SI FALTARÍA ALGÚN FREE*/
+	close(fd_input);
+	close(fd_output);
 	return exit;
 }
 
