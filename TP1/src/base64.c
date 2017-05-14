@@ -145,7 +145,7 @@ int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_r
         //archivo de caracteres posibles:
         encoded_chars[j] = encode(self, index);
     }
-    if(!error_ocurred(self)){
+    if(self->state == SUCCESS){
         int resu = write(self->output_file, encoded_chars, max_group_qty);
         if(resu == ERROR){
         	self->state = errno;//ferror(self->output_file) ? IO_ERROR : self->state;
