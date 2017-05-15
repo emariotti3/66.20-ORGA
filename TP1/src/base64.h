@@ -22,4 +22,6 @@ extern int concantenate_binary_to_int(unsigned char *characters);
 
 extern int issymbol(unsigned char *c, char *index);
 
+extern int decode_to_output_file(int infd,int outfd, int state, char *letter_indexes, int padding);
+
 #endif //BASE64_H
