@@ -77,7 +77,6 @@ str:  .asciiz "Hola\n"
 .text
 .abicalls
 
-
 .ent saludar
 .globl saludar
 
@@ -108,103 +107,6 @@ saludar: .frame $fp,16,ra
 
 
 .align	2
-
-BASE64_SF_SIZE = 48
-BASE64_RA = 40
-BASE64_FP = 36
-BASE64_GP = 32
-
-BASE64_a3_OFF = 60
-BASE64_a2_OFF = 56
-BASE64_a1_OFF = 52
-BASE64_a0_OFF = 48
-
-STRUCT_ENCDEC_SZ = 16	#Tamano en bytes del struct EncDec_t + padding
-BASE64_STRUCT_OFF = 16	#Direccion de inicio del struct en el stack
-
-.align	2
-.ent base64_encode
-.globl base64_encode
-base64_encode:
-	.frame	$fp, BASE64_SF_SIZE, ra 	#El stack frame tiene un tamano igual a BASE64_SF_SIZE
-	.set noreorder
-	.cpload	t9
-	.set reorder
-	subu $sp,$sp, BASE64_SF_SIZE
-
-	.cprestore BASE64_GP				#Guardo el gp(global pointer) actual
-	sw $fp, BASE64_FP($sp)				#Guardo el $fp(frame pointer) actual
-	sw ra, BASE64_RA($sp)				#Guardo el ra(return address) actual.
-
-	move $fp, $sp						#Muevo el $fp a la base del stack frame.
-
-	sw a0, BASE64_a0_OFF($fp)			#Guardo los argumentos en el ABA de la callee.
-	sw a1, BASE64_a1_OFF($fp)
-	sw a2, BASE64_a2_OFF($fp)
-	sw a3, BASE64_a3_OFF($fp)
-
-	addiu a0, $fp, BASE64_STRUCT_OFF	#Regs[a0] <-- Direccion de inicio de variable EncDec_t encdec.
-	lw a1, BASE64_a0_OFF($fp)			#Regs[a1] <-- infd.
-	lw a2, BASE64_a1_OFF($fp)			#Regs[a2] <-- outfd.
-
-	la t9, init_encdec
-	jalr t9								#Llamo a la funcion init_encdec
-
-	addiu a0, $fp, BASE6_STRUCT_OFF	#Regs[a0] <-- Direccion de inicio de variable EncDec_t encdec.
-	la t9, encode_text
-	jalr t9								#Llamo a la funcion encode_text
-
-	lw gp, BASE6_GP($sp)				#Restauro el gp(global pointer).
-	lw ra, BASE6_RA($sp)				#Restauro el ra(return address).
-	lw $fp, BASE6_FP($sp)				#Restauro el $fp(frame pointer).
-	addiu $sp, $sp, BASE6_SF_SIZE 		#Restauro el $sp(stack pointer).
-
-	jr ra 								#Retorno. 
-	.end	base64_encode
-	.size	base64_encode, .-base64_encode
-
-.align	2
-.ent base64_decode
-.globl base64_decode
-base64_decode:
-	.frame	$fp, BASE64_SF_SIZE, ra 	#El stack frame tiene un tamano igual a BASE64_SF_SIZE
-	.set noreorder
-	.cpload	t9
-	.set reorder
-	subu $sp,$sp, BASE64_SF_SIZE
-
-	.cprestore BASE64_GP				#Guardo el gp(global pointer) actual
-	sw $fp, BASE64_FP($sp)				#Guardo el $fp(frame pointer) actual
-	sw ra, BASE64_RA($sp)				#Guardo el ra(return address) actual.
-
-	move $fp, $sp						#Muevo el $fp a la base del stack frame.
-
-	sw a0, BASE64_a0_OFF($fp)			#Guardo los argumentos en el ABA de la callee.
-	sw a1, BASE64_a1_OFF($fp)
-	sw a2, BASE64_a2_OFF($fp)
-	sw a3, BASE64_a3_OFF($fp)
-
-	addiu a0, $fp, BASE64_STRUCT_OFF	#Regs[a0] <-- Direccion de inicio de variable EncDec_t encdec.
-	lw a1, BASE64_a0_OFF($fp)			#Regs[a1] <-- infd.
-	lw a2, BASE64_a1_OFF($fp)			#Regs[a2] <-- outfd.
-
-	la t9, init_encdec
-	jalr t9								#Llamo a la funcion init_encdec
-
-	addiu a0, $fp, BASE6_STRUCT_OFF		#Regs[a0] <-- Direccion de inicio de variable EncDec_t encdec.
-	la t9, decode_text
-	jalr t9								#Llamo a la funcion decode_text
-
-	lw gp, BASE6_GP($sp)				#Restauro el gp(global pointer).
-	lw ra, BASE6_RA($sp)				#Restauro el ra(return address).
-	lw $fp, BASE6_FP($sp)				#Restauro el $fp(frame pointer).
-	addiu $sp, $sp, BASE6_SF_SIZE 		#Restauro el $sp(stack pointer).
-
-	jr ra 								#Retorno. 
-	.end	base64_decode
-	.size	base64_decode, .-base64_decode
-
-
 .ent get_fill_char
 .globl get_fill_char
 
@@ -332,47 +234,190 @@ issymbol:
 				j	ra
 .end issymbol
 
-INIT_E_SF_SZ = 8
-INIT_E_FP_OFFSET = 4
-INIT_E_GP_OFFSET = 0
-
-INIT_E_a3_OFFSET = 20
-INIT_E_a2_OFFSET = 16
-INIT_E_a1_OFFSET = 12
-INIT_E_a0_OFFSET = 8
-
-
-.align	2
-.ent init_encdec
-.globl init_encdec
-
-init_encdec:
-	.frame sp, INIT_E_SF_SZ, ra 	#El stack frame tiene un tamano igual a INIT_E_SF_SZ.
+.align 2
+.globl	decode_to_output_file
+.ent	decode_to_output_file
+decode_to_output_file:
+	.frame $fp,56,ra
 	.set noreorder
-	cpload t9
+	.cpload	t9
 	.set reorder
-	subu sp, sp, INIT_E_SF_SZ		
+	subu sp,sp,56
+	.cprestore 16
+	sw	ra,48(sp)
+	sw	$fp,44(sp)
+	sw	gp,40(sp)
+	move	$fp,sp
+	sw	a0,56($fp)
+	sw	a1,60($fp)
+	sw	a2,64($fp)
+	sw	a3,68($fp)
+	addu	a0,$fp,24
+	move	a1,zero
+	li	a2,4
+	la	t9,memset
+	jal	ra,t9
+	lw	v0,68($fp)
+	lb	v0,0(v0)
+	sll	v1,v0,2
+	lw	v0,68($fp)
+	addu	v0,v0,1
+	lbu	v0,0(v0)
+	andi	v0,v0,0x30
+	sra	v0,v0,4
+	or	v0,v1,v0
+	sb	v0,24($fp)
+	lw	v0,68($fp)
+	addu	v0,v0,1
+	lbu	v0,0(v0)
+	andi	v0,v0,0xf
+	sll	v1,v0,4
+	lw	v0,68($fp)
+	addu	v0,v0,2
+	lbu	v0,0(v0)
+	andi	v0,v0,0x3c
+	sra	v0,v0,2
+	or	v0,v1,v0
+	sb	v0,25($fp)
+	lw	v0,68($fp)
+	addu	v0,v0,2
+	lbu	v0,0(v0)
+	andi	v0,v0,0x3
+	sll	v1,v0,6
+	lw	v0,68($fp)
+	addu	v0,v0,3
+	lbu	v0,0(v0)
+	or	v0,v1,v0
+	sb	v0,26($fp)
+	li	v1,3			
+	lw	v0,72($fp)
+	subu	v0,v1,v0
+	sw	v0,32($fp)
+	lw	v0,64($fp)
+	bne	v0,zero,jump
+		
+	li	v0, SYS_write # write file
+	lw	a0, 60($fp)   # a0: me guardé el outfd
+	addu a1, $fp, 24 
+	lw	a2, 32($fp)    
+	syscall
+	
+	sw	v0,36($fp)
+	lw	v1,36($fp)
+	li	v0,-1			
+	bne	v1,v0,jump
+	la	t9,__errno
+	jal	ra,t9
+	lw	v0,0(v0)
+	sw	v0,64($fp)
+jump:
+	lw	v0,64($fp)
+	move	sp,$fp
+	lw	ra,48(sp)
+	lw	$fp,44(sp)
+	addu	sp,sp,56
+	j	ra
+.end	decode_to_output_file
 
-	.cprestore INIT_E_GP_OFFSET		#Guardo el gp(global pointer) actual.
-	sw $fp, INIT_E_FP_OFFSET(sp) 	#Guardo el $fp(frame pointer) actual.
+ENC_OUT_SF_SZ = 96
+ENC_OUT_RA = 92
+ENC_OUT_FP = 88
+ENC_OUT_GP = 84
+ENC_OUT_a4_OFF = 112
+ENC_OUT_a3_OFF = 108
+ENC_OUT_a2_OFF = 104
+ENC_OUT_a1_OFF = 100
+ENC_OUT_a0_OFF = 96
 
-	move $fp, sp 					#Muevo el $fp(frame pointer) a la base del stack frame.
+GROUP_QTY_OFF = 28
+MAX_GROUP_QTY_OFF = 24
+SHIFT_COUNT = 40
+INDEX_OFF = 36
+READ_BYTES_OFF = 32
 
-	sw a0, INIT_E_a0_OFFSET($fp)	#Guardo los argumentos recibidos en el ABA de la callee.
-	sw a1, INIT_E_a1_OFFSET($fp)
-	sw a2, INIT_E_a2_OFFSET($fp)
+.align 2
+.globl	encode_to_output_file
+.ent	encode_to_output_file
+encode_to_output_file:
+	.frame	$fp, ENC_OUT_SF_SZ, ra
+	.set	noreorder
+	.cpload	t9
+	.set	reorder
+	subu	sp,sp,96
+	.cprestore 16
 
-	lw t0, INIT_E_a0_OFFSET($fp) 	#Regs[t0] <-- Mem[self] (direccion en memoria de self).
-							
-	sw a1, t0						#self->input_file = fdin
-	addiu t0,t0,4					#Regs[t0] <- Mem[self->output_file]
-	sw a2, t0						#self->output_file = fdout
-	addiu t0,t0,4					#Regs[t0] <- Mem[self->state]
-	sw zero, t0 					#self->output_file = SUCCESS
+	sw	ra, ENC_OUT_RA(sp)			#Guardo el ra(return address) actual.
+	sw	$fp, ENC_OUT_FP(sp)			#Guardo el $fp(frame pointer) actual.
+	sw	gp, ENC_OUT_GP(sp)			#Guardo el gp(global pointer) actual.
+	sw	s0, 80(sp)					#Guardo el valor actual de s0 porque voy a usar este resgistro.
 
-	lw gp, INIT_E_GP_OFFSET(sp) 	#Restauro el gp(global pointer).
-	lw $fp, INIT_E_FP_OFFSET(sp) 	#Restaruo el $fp(frame pointer).
-	addiu sp, sp, INIT_E_SF_SZ 		#Restauro el stack pointer.
-	jr ra
+	move $fp, sp 					#Muevo el stack frame pointer a la base del stack.
 
-.end init_encdec
+	sw	a0, ENC_OUT_a0_OFF($fp)		#Guardo los parametros recibidos (int infd, int outfd, int state, 
+	sw	a1, ENC_OUT_a1_OFF($fp)		#unsigned char *read_letters) en el ABA de la callee.
+	sw	a2, ENC_OUT_a2_OFF($fp)
+	sw	a3, ENC_OUT_a3_OFF($fp)
+
+#	sw	sp,48($fp)					#???
+	li	v0, 4 						#Regs[v0] <- (DECODED_GROUP_SZ * BYTE_SZ) / GROUP_SZ (Esta operacion da 4).
+	sw	v0, MAX_GROUP_QTY_OFF($fp) 	#Guardo el resultado de (DECODED_GROUP_SZ * BYTE_SZ) / GROUP_SZ en 'max_group_qty' en memoria.
+
+	lw	v0, ENC_OUT_a4_OFF($fp)		#Cargo el 5to argumento en v0. Regs[v0] <- tot_read
+	sll	v0, v0, 3					#Regs[v0] <- tot_read * BYTE_SZ(8) 
+
+	mtc1	v0, $f0 				#Mover el contenido de Regs[v0]= (tot_read * BYTE_SZ) a registro de punto flotante en Coprocesador1.
+	cvt.d.w	$f2,$f0 				#Convertir el contenido de Regs[f0] de Word a Double y guardar el resultado en Regs[f2].
+	l.d	$f0, E1 					#Load FP double (E1 debe ser la constante GROUP_SZ).
+	div.d	$f0,$f2,$f0 			#Regs[f0] <- (double)((tot_read * BYTE_SZ) / GROUP_SZ).
+	mov.d	$f12,$f0 				#Mover el resultado cargado en Regs[f0] a registro de doble precision Regs[f12].
+	la	t9, ceil 					#Cargo la direccion de 'ceil' en Regs[t9].
+	jal	ra, t9 						#Llamo a la funcion 'ceil'.
+
+	trunc.w.d $f0,$f0,v0 			#Regs[f0] <- (int)Regs[v0] (Casteo el resultado de 'ceil' y lo guardo en $f0).
+	s.s	$f0, GROUP_QTY_OFF($fp)		#Guardo el resultado de la operacion en una variable en memoria('group_qty'). 
+
+	sw	zero, READ_BYTES_OFF($fp) 	#Inicializo read_bytes = 0 en memoria.
+	sw	zero, INDEX_OFF($fp)		#Inicializo index = 0 en memoria.
+	sw	zero, SHIFT_COUNT($fp)		#Inicializo shift_count = 0 en memoria.
+
+	lw	v0, GROUP_QTY_OFF($fp)      #Regs[v0] <- group_qty
+	addiu	v0, v0, 1 				#Regs[v0] <- Regs[v0] + 1
+	addiu	v0, v0, 7 				#Regs[v0] <- Regs[v0] + 7
+	srl	v0,v0,3
+	sll	v0,v0,3
+	subu	sp,sp,v0
+	addu	v1,sp,16
+	sw	v1,52($fp)
+	lw	v0,28($fp)
+	addu	v0,v0,1
+	lw	a0,52($fp)
+	move	a1,zero
+	move	a2,v0
+	la	t9,memset
+	jal	ra,t9
+	la	t9,get_fill_char
+	jal	ra,t9
+	lw	a0,52($fp)
+	move	a1,v0
+	lw	a2,24($fp)
+	la	t9,memset
+	jal	ra,t9
+	lw	a0,108($fp)
+	la	t9,concantenate_binary_to_int
+	jal	ra,t9
+	sw	v0,32($fp)
+	sw	zero,44($fp)
+
+#ACA VA EL CODIGO DE LA FUNCION
+
+
+END:
+	lw	v0,104($fp)
+	lw	sp,48($fp)
+	move sp,$fp
+	lw	ra, ENC_OUT_RA(sp)
+	lw	$fp, ENC_OUT_FP(sp)
+	lw	s0,80(sp)
+	addu	sp, sp, ENC_OUT_SF_SZ
+	j	ra
+.end	encode_to_output_file

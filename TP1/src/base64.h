@@ -1,6 +1,7 @@
 #ifndef BASE64_H
 #define BASE64_H
 
+
 /*Recibe dos file descriptors infd y outfd, 
 codifica los leido desde infd a base64 
 y lo escribe en el file descriptor outfd*/
@@ -20,5 +21,7 @@ extern char encode(unsigned int letter_index);
 extern int concantenate_binary_to_int(unsigned char *characters);
 
 extern int issymbol(unsigned char *c, char *index);
+
+extern int decode_to_output_file(int infd,int outfd, int state, char *letter_indexes, int padding);
 
 #endif //BASE64_H
