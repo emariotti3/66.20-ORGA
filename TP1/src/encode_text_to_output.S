@@ -18,7 +18,10 @@ ENCODED_CHARS_OFF = 52
 STACK_PTR_OFF = 48
 J_OFF = 44
 
+MASK = 0x3F
+
 GROUP_SZ = 6.0
+BYTE_SZ = 8
 .align 2
 .globl	encode_to_output_file
 .ent	encode_to_output_file
@@ -43,7 +46,7 @@ encode_to_output_file:
 	sw	a3, ENC_OUT_a3_OFF($fp)
 
 	sw	sp, STACK_PTR_OFF($fp)		#Guardo el valor actual del stack pointer.
-	li	v0, 4 						#Regs[v0] <- (DECODED_GROUP_SZ * BYTE_SZ) / GROUP_SZ (Esta operacion da 4).
+	li	v0, 4		 				#Regs[v0] <- (DECODED_GROUP_SZ * BYTE_SZ) / GROUP_SZ (Esta operacion da 4).
 	sw	v0, MAX_GROUP_QTY_OFF($fp) 	#Guardo el resultado de (DECODED_GROUP_SZ * BYTE_SZ) / GROUP_SZ en 'max_group_qty' en memoria.
 
 	lw	v0, ENC_OUT_a4_OFF($fp)		#Cargo el 5to argumento en v0. Regs[v0] <- tot_read
@@ -62,7 +65,7 @@ encode_to_output_file:
 
 	sw	zero, READ_BYTES_OFF($fp) 	#Inicializo read_bytes = 0 en memoria.
 	sw	zero, INDEX_OFF($fp)		#Inicializo index = 0 en memoria.
-	sw	zero, SHIFT_COUNT($fp)		#Inicializo shift_count = 0 en memoria.
+	sw	zero, SHIFT_COUNT($fp)		#Inicializo shift_count = 0 en memoria, con doble precision.
 
 #-----------------CAMBIO---------------------------#
 
@@ -137,24 +140,26 @@ ENCODE_GROUP:
 	lw	v1, GROUP_QTY_OFF($fp)			#Regs[v1] <- group_qty
 	slt	v0, v0, v1						#Si (j < group_qty): Regs[V0] = 1; else: Regs[0] = 0
 	bne	v0, zero, FIND_INDEX			#Si Regs[v0] != 0 (o sea si j < group_qty), ir a FIND_INDEX
-	b	J2
+	b	WRITE
 FIND_INDEX:
-	lw	v1,24($fp)
-	lw	v0,44($fp)
-	subu	v0,v1,v0
-	addu	v0,v0,-1
-	mtc1	v0,$f0
-	cvt.d.w	$f2,$f0
-	l.d	$f0,E1
-	mul.d	$f2,$f2,$f0
-	l.d	$f0,E2
-	add.d	$f2,$f2,$f0
-	s.d	$f2,56($fp)
-	l.d	$f0,E3
-	s.d	$f0,72($fp)
-	l.d	$f2,56($fp)
-	l.d	$f4,72($fp)
-	c.le.d	$f4,$f2
+	lw	v1, MAX_GROUP_QTY_OFF($fp)		#Regs[v1] <- max_group_qty
+	lw	v0, J_OFF($fp)					#Regs[v0] <- j
+	subu	v0, v1, v0 					#Regs[v0] <- max_group_qty - j
+	addu	v0, v0, -1 					#Regs[v0] <- max_group_qty - j - 1
+	mtc1	v0, $f0						#Mover el contenido de Regs[v0](=max_group_qty-j-1) a registro de punto flotante en Coprocesador1.
+	cvt.d.w	$f2, $f0 					#Convertir el contenido de Regs[f0] de Word a Double y guardar el resultado en Regs[f2].
+	li.d $f0, GROUP_SZ 		#			#Cargo el inmediato GROUP_SZ en Reg[f0] de doble precision.
+	mul.d	$f2,$f2,$f0					#Regs[f2] <- (max_group_qty-j-1)*GROUP_SZ
+	li.d	$f0, BYTE_SZ 				#Cargo el inmediato BYTE_SZ en Reg[f0] de doble precision.
+	add.d	$f2,$f2,$f0 				#Regs[f2] <- (max_group_qty-j-1)*GROUP_SZ + BYTE_SZ
+	s.d	$f2, 56($fp)					#Guardo el resultado de la operacion (ahora guardado en Regs[f2]) en memoria, con doble precision.
+	li.d	$f0, MASK 					#Cargo MASK en Regs[f0] de doble precision.
+	s.d	$f0, 72($fp)					#Guardo MASK en memoria.
+	l.d	$f2, 56($fp)					#Regs[f2] <- (max_group_qty-j-1)*GROUP_SZ + BYTE_SZ
+#	l.d	$f4,72($fp)
+#	c.le.d	$f4,$f2
+	l.d	$f0, 72($fp)
+	c.le.d	$f0,$f2 					#If (Regs[f0](MASK) <= Regs[f2]): goto J4
 	bc1t	J4
 	l.d	$f0,56($fp)
 	trunc.w.d $f0,$f0,v0
@@ -178,41 +183,41 @@ J5:
 	sra	v0,v1,v0
 	andi	v0,v0,0x3f
 	sw	v0,36($fp)
-	lw	v0,44($fp)
+	lw	v0, J_OFF($fp)
 	lw	a1,52($fp)
 	addu	s0,a1,v0
 	lw	a0,36($fp)
 	la	t9,encode
 	jal	ra,t9
 	sb	v0,0(s0)
-	lw	v0,44($fp)
+	lw	v0, J_OFF($fp)
 	addu	v0,v0,1
-	sw	v0,44($fp)
+	sw	v0, J_OFF($fp)
 	b	ENCODE_GROUP
-J2:
-	lw	v0,104($fp)
-	bne	v0,zero,END
-	lw	a0,100($fp)
-	lw	a1,52($fp)
-	lw	a2,24($fp)
-	la	t9,write
-	jal	ra,t9
-	sw	v0,44($fp)
-	lw	v1,44($fp)
+WRITE:
+	lw	v0, ENC_OUT_a2_OFF($fp)		#Regs[v0] <- state
+	bne	v0, zero, END 				#If(state != SUCCESS): goto END
+	lw	a0, ENC_OUT_a1_OFF($fp)		#Regs[a0] <- outfd
+	lw	a1, ENCODED_CHARS_OFF($fp)  #Regs[a1] <- encoded_chars
+	lw	a2, MAX_GROUP_QTY_OFF($fp)  #Regs[a2] <- max_group_qty
+	la	t9, write 					#Llamado a write para escribir el resultado en outfd.
+	jal	ra, t9
+	sw	v0, 44($fp)					#Verifico si write me devolvio error(-1).
+	lw	v1, 44($fp)
 	li	v0,-1			
-	bne	v1,v0,END
-	la	t9,__errno
+	bne	v1,v0,END 					#Si no hubo error, goto END.
+	la	t9,__errno					#Si hubo error, devuelvo el codigo de error en v0
 	jal	ra,t9
 	lw	v0,0(v0)
-	sw	v0,104($fp)
+	sw	v0, ENC_OUT_a2_OFF($fp) 	#y guardo el codigo de error en state: Regs[v0] -> Mem[state].
 
 END:
-	lw	v0,104($fp)
-	lw	sp,48($fp)
+	lw	v0, ENC_OUT_a2_OFF($fp) 	
+	lw	sp, STACK_PTR_OFF($fp)		#Restauro el stack pointer
 	move sp,$fp
-	lw	ra, ENC_OUT_RA(sp)
-	lw	$fp, ENC_OUT_FP(sp)
-	lw	s0,80(sp)
+	lw	ra, ENC_OUT_RA(sp)			#Restauro el ra(return address).
+	lw	$fp, ENC_OUT_FP(sp)			#Restauro el $fp(frame pointer).
+	lw	s0, 80(sp)
 	addu	sp, sp, ENC_OUT_SF_SZ
 	j	ra
 .end	encode_to_output_file
