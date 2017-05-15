@@ -89,8 +89,7 @@ int encode_text(int infd, int outfd);
     return letters[letter_index];
 }*/
 
-/*
-bool at_stdin_end(EncDec_t *self){
+/*bool at_stdin_end(EncDec_t *self){
     return (self->input_file == 0) && feof(self->input_file);
 }
 
@@ -105,8 +104,8 @@ bool at_file_end(EncDec_t *self, int pos, int len){
     }
     return number;
 }*/
-/*
-int file_len(int fd){
+
+/*int file_len(int fd){
     int len = 0, pos = lseek(fd,0,SEEK_CUR);
     if (fd != 0){ //fd!=stdin
         lseek(fd, 0, SEEK_END);
@@ -167,7 +166,7 @@ int encode_text(int infd, int outfd){
     return state;
 }
 
-int decode_to_output_file(int infd,int outfd, int state, char *letter_indexes, int padding){
+/*int decode_to_output_file(int infd,int outfd, int state, char *letter_indexes, int padding){
     char buff[DECODED_GROUP_SZ + 1];
     memset(buff, '\0', (DECODED_GROUP_SZ + 1)*sizeof(char));
 
@@ -189,7 +188,7 @@ int decode_to_output_file(int infd,int outfd, int state, char *letter_indexes, i
 	     }
     }
     return state;
-}
+}*/
 
 /*bool issymbol(EncDec_t *self, unsigned char *c, char *index){
     for (int i = SYMBOL_POS; letters[i] && i < FILL_CHAR_POS; ++i){
