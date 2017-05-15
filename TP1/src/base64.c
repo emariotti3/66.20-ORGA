@@ -95,20 +95,8 @@ void set_output(EncDec_t *self, int output){
 
 /*char encode(EncDec_t *self, unsigned int letter_index){
     return letters[letter_index];
-<<<<<<< HEAD
-}
-=======
 }*/
 
-/*
-bool at_stdin_end(EncDec_t *self){
-    return (self->input_file == 0) && feof(self->input_file);
-}
-
-bool at_file_end(EncDec_t *self, int pos, int len){
-    return (self->input_file != 0) && (pos == len);
-}*/
->>>>>>> 005698e4a76a7d3d799f0c7d15782062f7a539b8
 
 /*int concantenate_binary_to_int(unsigned char *characters){
     int number = 0;
@@ -116,21 +104,7 @@ bool at_file_end(EncDec_t *self, int pos, int len){
         number = number | (characters[i] << (sizeof(int) -1 -i)*BYTE_SZ);
     }
     return number;
-<<<<<<< HEAD
-}
-=======
 }*/
-/*
-int file_len(int fd){
-    int len = 0, pos = lseek(fd,0,SEEK_CUR);
-    if (fd != 0){ //fd!=stdin
-        lseek(fd, 0, SEEK_END);
-        len = lseek(fd,0,SEEK_CUR);
-        lseek(fd, pos, SEEK_SET);
-    }
-    return len;
-}*/
->>>>>>> 005698e4a76a7d3d799f0c7d15782062f7a539b8
 
 int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_read){
     //group_qty: la cantidad de grupos de 6 bits que puedo formar

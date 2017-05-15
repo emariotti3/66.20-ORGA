@@ -332,3 +332,47 @@ issymbol:
 				j	ra
 .end issymbol
 
+INIT_E_SF_SZ = 8
+INIT_E_FP_OFFSET = 4
+INIT_E_GP_OFFSET = 0
+
+INIT_E_a3_OFFSET = 20
+INIT_E_a2_OFFSET = 16
+INIT_E_a1_OFFSET = 12
+INIT_E_a0_OFFSET = 8
+
+
+.align	2
+.ent init_encdec
+.globl init_encdec
+
+init_encdec:
+	.frame sp, INIT_E_SF_SZ, ra 	#El stack frame tiene un tamano igual a INIT_E_SF_SZ.
+	.set noreorder
+	cpload t9
+	.set reorder
+	subu sp, sp, INIT_E_SF_SZ		
+
+	.cprestore INIT_E_GP_OFFSET		#Guardo el gp(global pointer) actual.
+	sw $fp, INIT_E_FP_OFFSET(sp) 	#Guardo el $fp(frame pointer) actual.
+
+	move $fp, sp 					#Muevo el $fp(frame pointer) a la base del stack frame.
+
+	sw a0, INIT_E_a0_OFFSET($fp)	#Guardo los argumentos recibidos en el ABA de la callee.
+	sw a1, INIT_E_a1_OFFSET($fp)
+	sw a2, INIT_E_a2_OFFSET($fp)
+
+	lw t0, INIT_E_a0_OFFSET($fp) 	#Regs[t0] <-- Mem[self] (direccion en memoria de self).
+							
+	sw a1, t0						#self->input_file = fdin
+	addiu t0,t0,4					#Regs[t0] <- Mem[self->output_file]
+	sw a2, t0						#self->output_file = fdout
+	addiu t0,t0,4					#Regs[t0] <- Mem[self->state]
+	sw zero, t0 					#self->output_file = SUCCESS
+
+	lw gp, INIT_E_GP_OFFSET(sp) 	#Restauro el gp(global pointer).
+	lw $fp, INIT_E_FP_OFFSET(sp) 	#Restaruo el $fp(frame pointer).
+	addiu sp, sp, INIT_E_SF_SZ 		#Restauro el stack pointer.
+	jr ra
+
+.end init_encdec
