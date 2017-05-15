@@ -39,11 +39,11 @@ typedef enum error {ERROR =-1, SUCCESS, INVALID_CHARACTER, IO_ERROR, MEMORY_ERRO
 
 /****************************EncDec_t*************************************************/
 
-typedef struct encoder_decoder{
+/*typedef struct encoder_decoder{
     int input_file;
     int output_file;
     Error_t state;
-} EncDec_t;
+} EncDec_t;*/
 
 
 //Inicializa al EncDec_t con un file descriptor 'input' de donde
@@ -51,53 +51,42 @@ typedef struct encoder_decoder{
 //codificación/decodificación y un file descriptor 'output' en donde se
 //escribirán los caracteres de salida de la operación.Devuelve 0
 //si la operación es exitosa, de lo contrario devuelve un código de error.
-int init_encdec(EncDec_t *self, int fdin, int fdout);
+//int init_encdec(EncDec_t *self, int fdin, int fdout);
 
 //Decodifica el texto del 'input' y los escribe en el 'output'.
 //Devuelve 0 si la operación es exitosa, de lo contrario devuelve
 //un código de error.
-int decode_text(EncDec_t *self);
+int decode_text(int infd, int outfd);
 
 //Codifica el texto del 'input' y los escribe en el 'output'.
 //Devuelve 0 si la operación es exitosa, de lo contrario devuelve
 //un código de error.
-int encode_text(EncDec_t *self);
+int encode_text(int infd, int outfd);
 
 //Recibe un puntero a FILE y reemplaza el archivo de
 //entrada actual por el recibido.
-void set_input(EncDec_t *self, int input);
+//void set_input(EncDec_t *self, int input);
 
 //Recibe un puntero a FILE y reemplaza el archivo de
 //salida actual por el recibido.
-void set_output(EncDec_t *self, int output);
+//void set_output(EncDec_t *self, int output);
 
 /****************************Implementación EncDec_t************************************************/
 
-int init_encdec(EncDec_t *self, int fdin, int fdout){
+/*int init_encdec(EncDec_t *self, int fdin, int fdout){
     self->input_file = fdin;
     self->output_file = fdout;
     self->state = SUCCESS;
     return self->state;
-}
+}*/
 
 /*char get_fill_char(EncDec_t *self){
     //Obtengo el caracter de relleno ('=')
     return letters[FILL_CHAR_POS];
 }*/
 
-void set_input(EncDec_t *self, int input){
-    self->input_file = input;
-}
-
-void set_output(EncDec_t *self, int output){
-    self->output_file = output;
-}
-
 /*char encode(EncDec_t *self, unsigned int letter_index){
     return letters[letter_index];
-<<<<<<< HEAD
-}
-=======
 }*/
 
 /*
@@ -108,7 +97,6 @@ bool at_stdin_end(EncDec_t *self){
 bool at_file_end(EncDec_t *self, int pos, int len){
     return (self->input_file != 0) && (pos == len);
 }*/
->>>>>>> 005698e4a76a7d3d799f0c7d15782062f7a539b8
 
 /*int concantenate_binary_to_int(unsigned char *characters){
     int number = 0;
@@ -116,9 +104,6 @@ bool at_file_end(EncDec_t *self, int pos, int len){
         number = number | (characters[i] << (sizeof(int) -1 -i)*BYTE_SZ);
     }
     return number;
-<<<<<<< HEAD
-}
-=======
 }*/
 /*
 int file_len(int fd){
@@ -130,9 +115,8 @@ int file_len(int fd){
     }
     return len;
 }*/
->>>>>>> 005698e4a76a7d3d799f0c7d15782062f7a539b8
 
-int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_read){
+int encode_text_to_output(int infd,int outfd, int state, unsigned char *read_letters, int tot_read){
     //group_qty: la cantidad de grupos de 6 bits que puedo formar
     //con los bytes que leo:
     int max_group_qty = (DECODED_GROUP_SZ * BYTE_SZ) / GROUP_SZ;
@@ -154,34 +138,36 @@ int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_r
         //archivo de caracteres posibles:
         encoded_chars[j] = encode(index);
     }
-    if(self->state == SUCCESS){
-        int resu = write(self->output_file, encoded_chars, max_group_qty);
+    if( state == SUCCESS){
+        int resu = write(outfd, encoded_chars, max_group_qty);
         if(resu == ERROR){
-        	self->state = errno;//ferror(self->output_file) ? IO_ERROR : self->state;
+        	state = errno;//ferror(self->output_file) ? IO_ERROR : self->state;
         }
     }
-    return self->state;
+    return state;
 }
 
-int encode_text(EncDec_t *self){
+int encode_text(int infd, int outfd){
     //int input_len = file_len(self->input_file);
+    int state = SUCCESS;
+    
     unsigned char read_letters[sizeof(int)];
     memset(&read_letters, '\0', sizeof(int));
 
     //Leo de a 3 bytes y codifico:
-    int qty_read = read(self->input_file, read_letters, DECODED_GROUP_SZ);
-    while((self->state==SUCCESS) && (qty_read == DECODED_GROUP_SZ)){ //&& !at_stdin_end(self) && !at_file_end(self, lseek(self->input_file,0,SEEK_CUR), input_len)){
-        encode_text_to_output(self, read_letters, qty_read);
+    int qty_read = read(infd, read_letters, DECODED_GROUP_SZ);
+    while( (state == SUCCESS) && (qty_read == DECODED_GROUP_SZ)){ //&& !at_stdin_end(self) && !at_file_end(self, lseek(self->input_file,0,SEEK_CUR), input_len)){
+        encode_text_to_output(infd,outfd,state, read_letters, qty_read);
         memset(&read_letters, '\0', sizeof(int));
-        qty_read = read(self->input_file, read_letters, DECODED_GROUP_SZ);
+        qty_read = read(infd, read_letters, DECODED_GROUP_SZ);
     }
-    if((self->state==SUCCESS) && (qty_read > 0)){
-        return encode_text_to_output(self, read_letters, qty_read);
+    if((state==SUCCESS) && (qty_read > 0)){
+        return encode_text_to_output(infd,outfd,state, read_letters, qty_read);
     }
-    return self->state;
+    return state;
 }
 
-int decode_to_output_file(EncDec_t *self, char *letter_indexes, int padding){
+int decode_to_output_file(int infd,int outfd, int state, char *letter_indexes, int padding){
     char buff[DECODED_GROUP_SZ + 1];
     memset(buff, '\0', (DECODED_GROUP_SZ + 1)*sizeof(char));
 
@@ -196,13 +182,13 @@ int decode_to_output_file(EncDec_t *self, char *letter_indexes, int padding){
     //en el medio de los otros caracteres, este se copie
     //al archivo decodificado.
     size_t len = DECODED_GROUP_SZ - padding;
-    if((self->state == SUCCESS)){
-        int resu = write(self->output_file, buff, len);
+    if((state == SUCCESS)){
+        int resu = write(outfd, buff, len);
         if(resu == ERROR){
-	        self->state = errno;// ferror(self->output_file) ? IO_ERROR : self->state;
+	        state = errno;// ferror(self->output_file) ? IO_ERROR : self->state;
 	     }
     }
-    return self->state;
+    return state;
 }
 
 /*bool issymbol(EncDec_t *self, unsigned char *c, char *index){
@@ -215,7 +201,7 @@ int decode_to_output_file(EncDec_t *self, char *letter_indexes, int padding){
     return false;
 }*/
 
-int decode(EncDec_t *self, unsigned char *letters, char fill_character, int count){
+int decode(int infd, int outfd, int state, unsigned char *letters, char fill_character, int count){
     char indexes[ENCODED_GROUP_SZ + 1];
     memset(indexes, '\0', (ENCODED_GROUP_SZ + 1)*sizeof(char));
     int padding = 0;
@@ -243,16 +229,15 @@ int decode(EncDec_t *self, unsigned char *letters, char fill_character, int coun
             continue;
         }
         if(!issymbol(letters +i, indexes + i)){
-            self->state = INVALID_CHARACTER;
             return INVALID_CHARACTER;
         }
     }
-    return decode_to_output_file(self, indexes, padding);
+    return decode_to_output_file(infd,outfd,state, indexes, padding);
 }
 
-int decode_text(EncDec_t *self){
+int decode_text(int infd, int outfd){
     //int input_len = file_len(self->input_file);
-    self->state = SUCCESS;
+    int state = SUCCESS;
     char fill_character = get_fill_char();
     unsigned char read_letters[ENCODED_GROUP_SZ + 1];
     memset(read_letters, '\0', (ENCODED_GROUP_SZ + 1)*sizeof(char));
@@ -260,29 +245,25 @@ int decode_text(EncDec_t *self){
     //Inicializo el array de caracteres leidos con el caractere
     //de relleno por si no se completa la cantidad de bytes esperados.
     //Esto solo agrega un '\0' al resultado decodificado.
-    int qty_read = read(self->input_file, read_letters, ENCODED_GROUP_SZ);
-    while((self->state==SUCCESS) && (qty_read == ENCODED_GROUP_SZ)){// && !at_stdin_end(self) && !at_file_end(self, lseek(self->input_file, 0, SEEK_CUR), input_len)){
-        decode(self, read_letters, fill_character, ENCODED_GROUP_SZ);
+    int qty_read = read(infd, read_letters, ENCODED_GROUP_SZ);
+    while((state == SUCCESS) && (qty_read == ENCODED_GROUP_SZ)){// && !at_stdin_end(self) && !at_file_end(self, lseek(self->input_file, 0, SEEK_CUR), input_len)){
+        state = decode(infd,outfd, state, read_letters, fill_character, ENCODED_GROUP_SZ);
         memset(read_letters, '\0', ENCODED_GROUP_SZ*sizeof(char));
-        qty_read = read(self->input_file, read_letters, ENCODED_GROUP_SZ);
+        qty_read = read(infd, read_letters, ENCODED_GROUP_SZ);
     }
-    if ((self->state==SUCCESS) && (qty_read > 0)){
-        return decode(self, read_letters, fill_character, qty_read);
+    if ( (state==SUCCESS) && (qty_read > 0)){
+        return decode(infd, outfd, state, read_letters, fill_character, qty_read);
     }
-    return self->state;
+    return state;
 }
 
 /***********************************************************************************/
 
-/*int base64_encode(int infd, int outfd){
-	EncDec_t encdec;
-	init_encdec(&encdec, infd, outfd);
-	return encode_text(&encdec);
+int base64_encode(int infd, int outfd){
+	return encode_text(infd,outfd);
 }
 
 int base64_decode(int infd, int outfd){
-	EncDec_t encdec;
-	init_encdec(&encdec, infd, outfd);
-	return decode_text(&encdec);
-}*/
+	return decode_text(infd,outfd);
+}
 
