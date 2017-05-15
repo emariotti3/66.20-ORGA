@@ -234,3 +234,87 @@ issymbol:
 				j	ra
 .end issymbol
 
+.align 2
+.globl	decode_to_output_file
+.ent	decode_to_output_file
+decode_to_output_file:
+	.frame $fp,56,ra
+	.set noreorder
+	.cpload	t9
+	.set reorder
+	subu sp,sp,56
+	.cprestore 16
+	sw	ra,48(sp)
+	sw	$fp,44(sp)
+	sw	gp,40(sp)
+	move	$fp,sp
+	sw	a0,56($fp)
+	sw	a1,60($fp)
+	sw	a2,64($fp)
+	sw	a3,68($fp)
+	addu	a0,$fp,24
+	move	a1,zero
+	li	a2,4
+	la	t9,memset
+	jal	ra,t9
+	lw	v0,68($fp)
+	lb	v0,0(v0)
+	sll	v1,v0,2
+	lw	v0,68($fp)
+	addu	v0,v0,1
+	lbu	v0,0(v0)
+	andi	v0,v0,0x30
+	sra	v0,v0,4
+	or	v0,v1,v0
+	sb	v0,24($fp)
+	lw	v0,68($fp)
+	addu	v0,v0,1
+	lbu	v0,0(v0)
+	andi	v0,v0,0xf
+	sll	v1,v0,4
+	lw	v0,68($fp)
+	addu	v0,v0,2
+	lbu	v0,0(v0)
+	andi	v0,v0,0x3c
+	sra	v0,v0,2
+	or	v0,v1,v0
+	sb	v0,25($fp)
+	lw	v0,68($fp)
+	addu	v0,v0,2
+	lbu	v0,0(v0)
+	andi	v0,v0,0x3
+	sll	v1,v0,6
+	lw	v0,68($fp)
+	addu	v0,v0,3
+	lbu	v0,0(v0)
+	or	v0,v1,v0
+	sb	v0,26($fp)
+	li	v1,3			
+	lw	v0,72($fp)
+	subu	v0,v1,v0
+	sw	v0,32($fp)
+	lw	v0,64($fp)
+	bne	v0,zero,jump
+		
+	li	v0, SYS_write # write file
+	lw	a0, 60($fp)   # a0: me guardé el outfd
+	addu a1, $fp, 24 
+	lw	a2, 32($fp)    
+	syscall
+	
+	sw	v0,36($fp)
+	lw	v1,36($fp)
+	li	v0,-1			
+	bne	v1,v0,jump
+	la	t9,__errno
+	jal	ra,t9
+	lw	v0,0(v0)
+	sw	v0,64($fp)
+jump:
+	lw	v0,64($fp)
+	move	sp,$fp
+	lw	ra,48(sp)
+	lw	$fp,44(sp)
+	addu	sp,sp,56
+	j	ra
+.end	decode_to_output_file
