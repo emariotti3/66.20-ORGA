@@ -96,8 +96,9 @@ int encode_text_to_output(EncDec_t *self, unsigned char *read_letters, int tot_r
 
     int read_bytes = 0;
     unsigned int index = 0, shift_count = 0;
-    unsigned char encoded_chars[group_qty + 1];
-    memset(&encoded_chars, '\0', (group_qty + 1)*sizeof(char));
+    //unsigned char encoded_chars[group_qty + 1];
+    //memset(&encoded_chars, '\0', (group_qty + 1)*sizeof(char));
+    unsigned char encoded_chars[max_group_qty + 1];
     memset(&encoded_chars, get_fill_char(self), max_group_qty*sizeof(char));
 
     read_bytes = concantenate_binary_to_int(read_letters);

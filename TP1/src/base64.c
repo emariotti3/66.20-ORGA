@@ -105,24 +105,29 @@ int encode_text_to_output(int infd,int outfd, int state, unsigned char *read_let
 
     int read_bytes = 0;
     unsigned int index = 0, shift_count = 0;
-    unsigned char encoded_chars[group_qty + 1];
-    memset(&encoded_chars, '\0', (group_qty + 1)*sizeof(char));
-    memset(&encoded_chars, get_fill_char(), max_group_qty*sizeof(char));
 
+    //Inicializo el array 'encoded_chars' con el caracter de relleno:
+
+    //unsigned char encoded_chars[group_qty + 1];
+    //memset(&encoded_chars, '\0', (group_qty + 1)*sizeof(char));
+    //memset(&encoded_chars, get_fill_char(), (group_qty + 1)*sizeof(char));
+    unsigned char encoded_chars[max_group_qty + 1];
+    memset(&encoded_chars, get_fill_char(), (max_group_qty)*sizeof(char));
     read_bytes = concantenate_binary_to_int(read_letters);
 
-    //Ahora aplico operaciones logicas y obtengo un index:
     for (int j = 0; j < group_qty; ++j){
+        //Ahora aplico operaciones logicas y obtengo un index
+        //para cada grupo de 6 bits:
         shift_count = (max_group_qty - j - 1)*GROUP_SZ + BYTE_SZ;
         index = (read_bytes >> shift_count) & MASK;
         //Uso el index para obtener un caracter del
         //archivo de caracteres posibles:
         encoded_chars[j] = encode(index);
     }
-    if( state == SUCCESS){
+    if(state == SUCCESS){
         int resu = write(outfd, encoded_chars, max_group_qty);
         if(resu == ERROR){
-        	state = errno;//ferror(self->output_file) ? IO_ERROR : self->state;
+        	state = errno;
         }
     }
     return state;
