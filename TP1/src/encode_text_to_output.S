@@ -152,46 +152,45 @@ FIND_INDEX:
 	mul.d	$f2,$f2,$f0					#Regs[f2] <- (max_group_qty-j-1)*GROUP_SZ
 	li.d	$f0, BYTE_SZ 				#Cargo el inmediato BYTE_SZ en Reg[f0] de doble precision.
 	add.d	$f2,$f2,$f0 				#Regs[f2] <- (max_group_qty-j-1)*GROUP_SZ + BYTE_SZ
-	s.d	$f2, 56($fp)					#Guardo el resultado de la operacion (ahora guardado en Regs[f2]) en memoria, con doble precision.
+#	s.d	$f2, 56($fp)					#Guardo el resultado de la operacion (ahora guardado en Regs[f2]) en memoria, con doble precision.
+
 	li.d	$f0, MASK 					#Cargo MASK en Regs[f0] de doble precision.
-	s.d	$f0, 72($fp)					#Guardo MASK en memoria.
-	l.d	$f2, 56($fp)					#Regs[f2] <- (max_group_qty-j-1)*GROUP_SZ + BYTE_SZ
+#	s.d	$f0, 72($fp)					#Guardo MASK en memoria.
+#	l.d	$f2, 56($fp)					#Regs[f2] <- (max_group_qty-j-1)*GROUP_SZ + BYTE_SZ
+
+#	c.le.d	$f4, $f2 					#If (Regs[f4](MASK) <= Regs[f2]): goto J4
+#	bc1t	J4							
+#	l.d	$f0, 56($fp) 					#Regs[f0] <- (max_group_qty-j-1)*GROUP_SZ + BYTE_SZ
+#	trunc.w.d $f0,$f0,v0 				#Regs[f0] <- (int)(max_group_qty-j-1)
+#	s.s	$f0,64($fp)
+#	b	J5
+#J4:
+#	l.d	$f2,56($fp)
 #	l.d	$f4,72($fp)
-#	c.le.d	$f4,$f2
-	l.d	$f0, 72($fp)
-	c.le.d	$f0,$f2 					#If (Regs[f0](MASK) <= Regs[f2]): goto J4
-	bc1t	J4
-	l.d	$f0,56($fp)
-	trunc.w.d $f0,$f0,v0
-	s.s	$f0,64($fp)
-	b	J5
-J4:
-	l.d	$f2,56($fp)
-	l.d	$f4,72($fp)
-	sub.d	$f0,$f2,$f4
-	li	v0,-2147483648			# 0xffffffff80000000
-	trunc.w.d $f2,$f0,a0
-	s.s	$f2,64($fp)
-	lw	v1,64($fp)
-	or	v1,v1,v0
-	sw	v1,64($fp)
+#	sub.d	$f0,$f2,$f4
+#	li	v0,-2147483648			# 0xffffffff80000000
+#	trunc.w.d $f2,$f0,a0
+#	s.s	$f2,64($fp)
+#	lw	v1,64($fp)
+#	or	v1,v1,v0
+#	sw	v1,64($fp)
 J5:
-	lw	a0,64($fp)
-	sw	a0,40($fp)
-	lw	v1,32($fp)
-	lw	v0,40($fp)
-	sra	v0,v1,v0
-	andi	v0,v0,0x3f
-	sw	v0,36($fp)
+	lw	a0, 64($fp)
+	sw	a0, 40($fp)
+	lw	v1, READ_BYTES_OFF($fp) 	#Regs[v1] <- Mem[index]
+	lw	v0, 40($fp)					
+	sra	v0, v1, v0  				#Regs[v0] <- read_bytes >> shift_count
+	andi	v0, v0, MASK 			#Regs[v0] <- (read_bytes >> shift_count) & MASK
+	sw	v0, INDEX_OFF($fp) 			#Mem[index] <- (read_bytes >> shift_count) & MASK
 	lw	v0, J_OFF($fp)
-	lw	a1,52($fp)
-	addu	s0,a1,v0
-	lw	a0,36($fp)
-	la	t9,encode
-	jal	ra,t9
-	sb	v0,0(s0)
+	lw	a1, 52($fp)
+	addu	s0, a1, v0
+	lw	a0, INDEX_OFF($fp)
+	la	t9, encode
+	jal	ra, t9
+	sb	v0, 0(s0)
 	lw	v0, J_OFF($fp)
-	addu	v0,v0,1
+	addu v0, v0, 1
 	sw	v0, J_OFF($fp)
 	b	ENCODE_GROUP
 WRITE:
@@ -210,7 +209,6 @@ WRITE:
 	jal	ra,t9
 	lw	v0,0(v0)
 	sw	v0, ENC_OUT_a2_OFF($fp) 	#y guardo el codigo de error en state: Regs[v0] -> Mem[state].
-
 END:
 	lw	v0, ENC_OUT_a2_OFF($fp) 	
 	lw	sp, STACK_PTR_OFF($fp)		#Restauro el stack pointer
