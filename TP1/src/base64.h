@@ -23,10 +23,10 @@ extern int decode_to_output_file(int infd,int outfd, int state, char *letter_ind
 
 extern int encode_text_to_output(int infd,int outfd, int state, unsigned char *read_letters, int tot_read);
 
-extern int decode(int infd, int outfd, int state, unsigned char *letters, char fill_character, int count);
+//extern int decode(int infd, int outfd, int state, unsigned char *letters, char fill_character, int count);
 
-extern int decode_text(int infd, int outfd);
+//extern int decode_text(int infd, int outfd);
 
-extern int encode_text(int infd, int outfd);
+//extern int encode_text(int infd, int outfd);
 
 #endif //BASE64_H
