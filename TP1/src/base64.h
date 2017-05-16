@@ -11,8 +11,6 @@ decodifica los leido desde infd en base64
 y lo escribe en el file descriptor outfd*/
 int base64_decode(int infd, int outfd);
 
-extern int saludar();
-
 extern char get_fill_char();
 
 extern char encode(unsigned int letter_index);
