@@ -143,7 +143,7 @@ int encode_text(int infd, int outfd){
     //Leo de a 3 bytes y codifico:
     int qty_read = read(infd, read_letters, DECODED_GROUP_SZ);
     while( (state == SUCCESS) && (qty_read == DECODED_GROUP_SZ)){ //&& !at_stdin_end(self) && !at_file_end(self, lseek(self->input_file,0,SEEK_CUR), input_len)){
-        encode_text_to_output(infd,outfd,state, read_letters, qty_read);
+        encode_text_to_output(infd, outfd, state, read_letters, DECODED_GROUP_SZ);
         memset(&read_letters, '\0', sizeof(int));
         qty_read = read(infd, read_letters, DECODED_GROUP_SZ);
     }
@@ -187,7 +187,7 @@ int encode_text(int infd, int outfd){
     return false;
 }*/
 
-int decode(int infd, int outfd, int state, unsigned char *letters, char fill_character, int count){
+int decode(int infd, int outfd, unsigned char *letters, char fill_character, int count){
     char indexes[ENCODED_GROUP_SZ + 1];
     memset(indexes, '\0', (ENCODED_GROUP_SZ + 1)*sizeof(char));
     int padding = 0;
@@ -233,7 +233,7 @@ int decode_text(int infd, int outfd){
     //Esto solo agrega un '\0' al resultado decodificado.
     int qty_read = read(infd, read_letters, ENCODED_GROUP_SZ);
     while((state == SUCCESS) && (qty_read == ENCODED_GROUP_SZ)){// && !at_stdin_end(self) && !at_file_end(self, lseek(self->input_file, 0, SEEK_CUR), input_len)){
-        state = decode(infd,outfd, state, read_letters, fill_character, ENCODED_GROUP_SZ);
+        state = decode(infd, outfd, state, read_letters, fill_character, ENCODED_GROUP_SZ);
         memset(read_letters, '\0', ENCODED_GROUP_SZ*sizeof(char));
         qty_read = read(infd, read_letters, ENCODED_GROUP_SZ);
     }
