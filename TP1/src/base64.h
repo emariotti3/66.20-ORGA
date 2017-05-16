@@ -23,4 +23,5 @@ extern int issymbol(unsigned char *c, char *index);
 
 extern int decode_to_output_file(int infd,int outfd, int state, char *letter_indexes, int padding);
 
+extern int encode_text_to_output(int infd,int outfd, int state, unsigned char *read_letters, int tot_read);
 #endif //BASE64_H
