@@ -132,7 +132,7 @@ int encode_text(int infd, int outfd);
     }
     return state;
 }*/
-/*
+
 int encode_text(int infd, int outfd){
     //int input_len = file_len(self->input_file);
     int state = SUCCESS;
@@ -151,7 +151,7 @@ int encode_text(int infd, int outfd){
         return encode_text_to_output(infd,outfd,state, read_letters, qty_read);
     }
     return state;
-}*/
+}
 
 /*int decode_to_output_file(int infd,int outfd, int state, char *letter_indexes, int padding){
     char buff[DECODED_GROUP_SZ + 1];
@@ -186,7 +186,7 @@ int encode_text(int infd, int outfd){
     }
     return false;
 }*/
-/*
+
 int decode(int infd, int outfd, int state, unsigned char *letters, char fill_character, int count){
     char indexes[ENCODED_GROUP_SZ + 1];
     memset(indexes, '\0', (ENCODED_GROUP_SZ + 1)*sizeof(char));
@@ -241,7 +241,7 @@ int decode_text(int infd, int outfd){
         return decode(infd, outfd, state, read_letters, fill_character, qty_read);
     }
     return state;
-}*/
+}
 
 /***********************************************************************************/
 
