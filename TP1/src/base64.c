@@ -97,7 +97,7 @@ int encode_text(int infd, int outfd);
     return number;
 }*/
 
-int encode_text_to_output(int infd,int outfd, int state, unsigned char *read_letters, int tot_read){
+/*int encode_text_to_output(int infd,int outfd, int state, unsigned char *read_letters, int tot_read){
     //group_qty: la cantidad de grupos de 6 bits que puedo formar
     //con los bytes que leo:
     int max_group_qty = (DECODED_GROUP_SZ * BYTE_SZ) / GROUP_SZ;
@@ -131,7 +131,7 @@ int encode_text_to_output(int infd,int outfd, int state, unsigned char *read_let
         }
     }
     return state;
-}
+}*/
 
 int encode_text(int infd, int outfd){
     //int input_len = file_len(self->input_file);
