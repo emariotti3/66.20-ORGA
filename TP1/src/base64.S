@@ -1,25 +1,6 @@
 #include<mips/regdef.h>
 #include<sys/syscall.h>
 
-ENC_OUT_SF_SZ = 96
-ENC_OUT_RA = 92
-ENC_OUT_FP = 88
-ENC_OUT_GP = 84
-ENC_OUT_a4_OFF = 112
-ENC_OUT_a3_OFF = 108
-ENC_OUT_a2_OFF = 104
-ENC_OUT_a1_OFF = 100
-ENC_OUT_a0_OFF = 96
-
-SHIFT_COUNT = 40
-INDEX_OFF = 36
-READ_BYTES_OFF = 32
-GROUP_QTY_OFF = 28
-MAX_GROUP_QTY_OFF = 24
-ENCODED_CHARS_OFF = 52
-STACK_PTR_OFF = 48
-J_OFF = 44
-
 .rdata
 .align	2
 .type	letters, @object
@@ -90,127 +71,33 @@ letters:
 	.byte 43
 	.byte 47
 	.byte 61
-	
-str:  .asciiz "Hola\n"
-
-.text
-.abicalls
-
-.align	2
-.ent get_fill_char
-.globl get_fill_char
-
-get_fill_char:
-
-	.frame $fp,8,ra			
-	.set noreorder
-	.cpload	t9
-	.set reorder
-	subu sp,sp,8
-	.cprestore 4
-	sw	$fp,0(sp)
-	move $fp,sp
-	
-	lb	t1,letters+64  
-	
-	lw $fp,0(sp)
-	lw gp,4(sp)
-	addu sp,sp,8
-	move v0,t1  #cargo el igual en v0 para retornarlo
-	j	ra
-.end	get_fill_char
-
-
-.align	2
-.ent encode
-.globl encode
-
-encode:
-	.frame $fp,8,ra			
-	.set noreorder
-	.cpload	t9
-	.set reorder
-	subu sp,sp,8
-	.cprestore 4
-	sw	$fp,0(sp)
-	move $fp,sp
-	
-	la	v0,letters
-	addu v0,a0,v0
-	lb	v0,0(v0) #letter en v0
-	
-	lw $fp,0(sp)
-	lw gp,4(sp)
-	addu sp,sp,8
-	
-	j	ra
-.end encode
-
-
-.align	2
-.ent concantenate_binary_to_int
-.globl concantenate_binary_to_int
-
-concantenate_binary_to_int:
-	.frame $fp,8,ra			
-	.set noreorder
-	.cpload	t9
-	.set reorder
-	subu sp,sp,8
-	.cprestore 4
-	sw	$fp,0(sp)
-	move $fp,sp
-	
-	li t0,0 # t0 = i
-	li t1,0 # t1 = number
-	li t2,4 # t2 = sizeof(int)
-	
-	while: 	beq t0,t2,finConcatenate
-			li t3,3 # t3 = sizeof(int)-1
-			subu t3,t3,t0 # t3 = sizeof(int)-1 - i
-			sll t3,t3,3 # t3 = t3>>3 = t3*8 = t3*BYTE_SZ
-			addu t4,t0,a0 #characters i
-			lb t4,0(t4) 
-			sll t4,t4,t3
-			or t1,t1,t4
-			addi t0,t0,1
-			b while			
-	
-	finConcatenate: move v0,t1
-					lw $fp,0(sp)
-					lw gp,4(sp)
-					addu sp,sp,8
-	
-					j	ra
-.end concantenate_binary_to_int
-	
 
 .align	2
 .ent issymbol
 .globl issymbol
 
 issymbol:
-	.frame $fp,8,ra			
+	.frame $fp, 8, ra			
 	.set noreorder
 	.cpload	t9
 	.set reorder
-	subu sp,sp,8
+	subu sp, sp, 8
 	.cprestore 4
-	sw	$fp,0(sp)
-	move $fp,sp
+	sw	$fp, 0(sp)
+	move $fp, sp
 
-	li t0,64 # t0 = FILL_CHAR_POS
-	li t1,62 # t1 = SYMBOL_POS = i
+	li t0, 64 								#t0 = FILL_CHAR_POS
+	li t1, 62 								#t1 = SYMBOL_POS = i
 	
 
-	ciclo: 	beq t0,t1,finIsSymbol #primer condicion
-			la t2,letters  #dire de letters en t2
-			add t2,t2,t1  #le sumo i
-			lb t2,0(t2) #cargo el byte en t2+1
-			beqz t2,finIsSymbol #segunda condicion de corte
-			bne a0,t2,vueltaWhile #si letters i != c -> vuelta a while
-			move a1,t1 # a1 = *index = i
-			li v0,1 # 1 = true
+	ciclo: 	beq t0, t1, finIsSymbol 		#primer condicion
+			la t2, letters  				#dire de letters en t2
+			add t2, t2, t1  				#le sumo i
+			lb t2, 0(t2) 					#cargo el byte en t2+1
+			beqz t2, finIsSymbol 			#segunda condicion de corte
+			bne a0, t2, vueltaWhile 		#si letters i != c -> vuelta a while
+			move a1, t1 					# a1 = *index = i
+			li v0, 1 						# 1 = true
 			b retorno
 			
 	vueltaWhile: addi t1,t1,1 #i++
@@ -224,96 +111,388 @@ issymbol:
 				j	ra
 .end issymbol
 
-.align 2
-.globl	decode_to_output_file
-.ent	decode_to_output_file
-decode_to_output_file:
-	.frame $fp,56,ra
+ENC_T_a1_OFF = 52
+ENC_T_a0_OFF = 48
+ENC_T_SF_SZ = 48
+ENC_T_RA_OFF = 40
+ENC_T_FP_OFF = 36
+ENC_T_GP_OFF = 32
+ENC_T_STATE_OFF = 28
+ENC_T_READL_OFF = 24
+ENC_T_QTY_READ_OFF = 20
+SUCCESS = 0
+READ_LETTERS_SZ = 4
+DECODED_GROUP_SZ = 3
+.align	2
+.ent encode_text
+.globl encode_text
+encode_text:
+	.frame $fp, ENC_T_SF_SZ, ra
 	.set noreorder
 	.cpload	t9
 	.set reorder
-	subu sp,sp,56
-	.cprestore 16
-	sw	ra,48(sp)
-	sw	$fp,44(sp)
-	sw	gp,40(sp)
-	move	$fp,sp
-	sw	a0,56($fp)
-	sw	a1,60($fp)
-	sw	a2,64($fp)
-	sw	a3,68($fp)
-	addu	a0,$fp,24
-	move	a1,zero
-	li	a2,4
-	la	t9,memset
-	jal	ra,t9
-	lw	v0,68($fp)
-	lb	v0,0(v0)
-	sll	v1,v0,2
-	lw	v0,68($fp)
-	addu	v0,v0,1
-	lbu	v0,0(v0)
-	andi	v0,v0,0x30
-	sra	v0,v0,4
-	or	v0,v1,v0
-	sb	v0,24($fp)
-	lw	v0,68($fp)
-	addu	v0,v0,1
-	lbu	v0,0(v0)
-	andi	v0,v0,0xf
-	sll	v1,v0,4
-	lw	v0,68($fp)
-	addu	v0,v0,2
-	lbu	v0,0(v0)
-	andi	v0,v0,0x3c
-	sra	v0,v0,2
-	or	v0,v1,v0
-	sb	v0,25($fp)
-	lw	v0,68($fp)
-	addu	v0,v0,2
-	lbu	v0,0(v0)
-	andi	v0,v0,0x3
-	sll	v1,v0,6
-	lw	v0,68($fp)
-	addu	v0,v0,3
-	lbu	v0,0(v0)
-	or	v0,v1,v0
-	sb	v0,26($fp)
-	li	v1,3			
-	lw	v0,72($fp)
-	subu	v0,v1,v0
-	sw	v0,32($fp)
-	lw	v0,64($fp)
-	bne	v0,zero,jump
-		
-	li	v0, SYS_write # write file
-	lw	a0, 60($fp)   # a0: me guardé el outfd
-	addu a1, $fp, 24 
-	lw	a2, 32($fp)    
-	syscall
-	
-	sw	v0,36($fp)
-	lw	v1,36($fp)
-	li	v0,-1			
-	bne	v1,v0,jump
-	la	t9,__errno
-	jal	ra,t9
-	lw	v0,0(v0)
-	sw	v0,64($fp)
-jump:
-	lw	v0,64($fp)
-	move	sp,$fp
-	lw	ra,48(sp)
-	lw	$fp,44(sp)
-	addu	sp,sp,56
-	j	ra
-.end	decode_to_output_file
+	subu sp, sp, ENC_T_SF_SZ				#Creo el stack frame.
+	.cprestore ENC_T_GP_OFF					#Guardo el gp(global pointer) en el stack.
+	sw ra, ENC_T_RA_OFF(sp)					#Guardo el ra(return address) en el stack.
+	sw $fp, ENC_T_FP_OFF(sp)				#Guardo el $fp(file pointer) en el stack.
 
+	move $fp, sp							#Muevo el frame pointer a la base del stack.
+
+	sw a0, ENC_T_a0_OFF($fp)				#Guardo los argumentos (int infd, int outfd) en el ABA de la callee.
+	sw a1, ENC_T_a1_OFF($fp)
+
+	sw SUCCESS, ENC_T_STATE_OFF($fp)		#Inicializo int state = SUCCESS en memoria.
+	lw s0, ENC_T_STATE_OFF($fp)				#Regs[s0] <- state.
+
+memset_read_letters:
+	addiu a0, $fp, ENC_T_READL_OFF			#Regs[t0] <- read_letters. Cargo la direccion inicial del array 'read_letters' en Regs[t0].
+	move a1, zero							#Muevo el caracter de relleno '\0' a Regs[a1].
+	li a2, READ_LETTERS_SZ 					#Cargo la cantidad READ_LETTERS_SZ en Regs[a2]. Esta es la cantidad de bytes que tiene que inicializar memset.
+	la	t9,	memset 							#Llamado a memset
+	jal	ra,	t9								
+
+read_letters:
+	lw a0, ENC_T_a0_OFF($fp) 				#Regs[a0] <- infd
+	addiu a1, $fp, ENC_T_READL_OFF			#Regs[a1] <- read_letters. Cargo la direccion inicial del array 'read_letters' en Regs[a1].
+	li a2, DECODED_GROUP_SZ 
+
+	li	v0, SYS_read 						#Read file   
+	syscall
+
+	sw v0, ENC_T_QTY_READ_OFF($fp)			#Guardo la cantidad de bytes leidos en la variable qty_read en memoria. FALTA CONTROLAR a3 para ver si hay error.
+
+while_encode:	
+	seq t1, s0, SUCCESS 					#If(state == SUCCESS): Regs[t0] <- 1 else: Regs[t0] <- 0.
+	bnez t1, end_encode_text				#If(state != SUCCESS): Goto end_encode_text
+
+	lw t0, ENC_T_QTY_READ_OFF($fp)			#Regs[t0] <- qty_read
+	blez t0, end_encode_text    			#If(qty_read <= 0): Goto end_encode_text
+
+	lw t1, ENC_T_a0_OFF($fp)				#Regs[t1] <- infd
+	lw t2, ENC_T_a1_OFF($fp)				#Regs[t2] <- outfd
+
+
+	move a3, t0								#Regs[a3] <- qty_read
+	addiu a2, $fp, ENC_T_READL_OFF			#Regs[a2] <- read_letters
+	move a1, t2								#Regs[a1] <- outfd
+	move a0, t1 							#Regs[a0] <- infd
+
+	la t9, encode 							#Llamado a subrutina 'encode'
+	jal encode
+
+	sw v0, ENC_T_STATE_OFF($fp) 			#Guardo el resultado de decode como 'state' en memoria.
+	lw s0, ENC_T_STATE_OFF($fp)				#Regs[s0] <- state
+
+	b memset_read_letters
+
+end_encode_text:
+	lw v0, ENC_T_STATE_OFF($fp)				#Regs[v0] <- state
+
+	lw ra, ENC_T_RA_OFF(sp)					#Restauro el ra(return address).
+	lw gp, ENC_T_GP_OFF(sp)					#Restauro el gp(global pointer).
+	lw $fp, ENC_T_FP_OFF(sp)				#Restauro el $fp(file pointer).
+	addiu sp, sp, ENC_T_SF_SZ
+
+	jr ra
+.end encode_text
+
+DEC_T_a1_OFF = 52
+DEC_T_a0_OFF = 48
+DEC_T_SF_SZ = 48
+DEC_T_RA_OFF = 40
+DEC_T_FP_OFF = 36
+DEC_T_GP_OFF = 32
+DEC_T_STATE_OFF = 28
+DEC_T_READL_OFF = 24
+DEC_T_QTY_READ_OFF = 20
+SUCCESS = 0
+ENCODED_GROUP_SZ = 4
+FILL_CHAR_POS = 64
+.align	2
+.ent decode_text
+.globl decode_text
+decode_text:
+	.frame $fp, DEC_T_SF_SZ, ra
+	.set noreorder
+	.cpload	t9
+	.set reorder
+	subu sp, sp, DEC_T_SF_SZ				#Creo el stack frame.
+	.cprestore DEC_T_GP_OFF					#Guardo el gp(global pointer) en el stack.
+	sw ra, DEC_T_RA_OFF(sp)					#Guardo el ra(return address) en el stack.
+	sw $fp, DEC_T_FP_OFF(sp)				#Guardo el $fp(file pointer) en el stack.
+
+	move $fp, sp							#Muevo el frame pointer a la base del stack.
+
+	sw a0, DEC_T_a0_OFF($fp)				#Guardo los argumentos (int infd, int outfd) en el ABA de la callee.
+	sw a1, DEC_T_a1_OFF($fp)
+
+	sw SUCCESS, DEC_T_STATE_OFF($fp)		#Inicializo int state = SUCCESS en memoria.
+	lw s0, DEC_T_STATE_OFF($fp)				#Regs[s0] <- state.
+
+memset_read_letters:
+	addiu a0, $fp, DEC_T_READL_OFF			#Regs[t0] <- read_letters. Cargo la direccion inicial del array 'read_letters' en Regs[t0].
+	move a1, zero							#Muevo el caracter de relleno(0) a Regs[a1].
+	li a2, ENCODED_GROUP_SZ 		
+	addiu a2, a2, 1 						#Cargo la cantidad ENCODED_GROUP_SZ + 1 en Regs[a2]. Esta es la cantidad de bytes que tiene que inicializar memset.
+	la	t9,	memset 							#Llamado a memset
+	jal	ra,	t9				
+
+read_letters:
+	lw a0, DEC_T_a0_OFF($fp) 				#Regs[a0] <- infd
+	addiu a1, $fp, DEC_T_READL_OFF			#Regs[a1] <- read_letters. Cargo la direccion inicial del array 'read_letters' en Regs[a1].
+	li a2, ENCODED_GROUP_SZ
+
+	li	v0, SYS_read 						#Read file   
+	syscall
+
+	sw v0, DEC_T_QTY_READ_OFF($fp)			#Guardo la cantidad de bytes leidos en la variable qty_read en memoria. FALTA CONTROLAR a3 para ver si hay error.
+
+while_decode:	
+	seq t1, s0, SUCCESS 					#If(state == SUCCESS): Regs[t0] <- 1 else: Regs[t0] <- 0.
+	bnez t1, write_extra_chars				#If(state != SUCCESS: Goto write_extra_chars
+
+	lw t0, DEC_T_QTY_READ_OFF($fp)			#Regs[t0] <- qty_read
+	blez t0, end_decode_text    			#If(qty_read <= 0): Goto end_encode_text
+
+	lw t1, DEC_T_a0_OFF($fp)				#Regs[t1] <- infd
+	lw t2, DEC_T_a1_OFF($fp)				#Regs[t2] <- outfd
+
+	move a3, t0								#Regs[a3] <- qty_read
+	addiu a2, $fp, DEC_T_READL_OFF			#Regs[a2] <- read_letters
+	move a1, t2								#Regs[a1] <- outfd
+	move a0, t1 							#Regs[a0] <- infd
+
+	la t9, encode 							#Llamado a subrutina 'encode'
+	jal encode
+
+	sw v0, DEC_T_STATE_OFF($fp) 			#Guardo el resultado de decode como 'state' en memoria.
+	lw s0, DEC_T_STATE_OFF($fp)				#Regs[s0] <- state
+
+	b memset_read_letters
+
+end_decode_text:
+	lw v0, DEC_T_STATE_OFF($fp)				#Regs[v0] <- state
+
+	lw ra, DEC_T_RA_OFF(sp)					#Restauro el ra(return address).
+	lw gp, DEC_T_GP_OFF(sp)					#Restauro el gp(global pointer).
+	lw $fp, DEC_T_FP_OFF(sp)				#Restauro el $fp(file pointer).
+	addiu sp, sp, DEC_T_SF_SZ
+
+	jr ra
+.end decode_text
+
+DECODE_a3_OFF = 60
+DECODE_a2_OFF = 56
+DECODE_a1_OFF = 52
+DECODE_a0_OFF = 48
+DECODE_SF_SZ = 48
+
+DECODE_s0_OFF = 52
+DECODE_s1_OFF = 48
+DECODE_s2_OFF = 44
+DECODE_RA_OFF = 40
+DECODE_FP_OFF = 36
+DECODE_GP_OFF = 32
+DECODE_BUFF_OFF = 28
+DECODE_INDEXES_OFF = 24
+DECODE_LEN_OFF = 20
+DECODE_i_OFF = 16
+
+DELTA_UPP = 65
+DELTA_LOW = 71
+DELTA_NUM = 4
+ENCODED_GROUP_SZ = 4
+INVALID_CHARACTER = 1
+MIN_VAL_UPP = 65
+MAX_VAL_UPP = 90
+MIN_VAL_LOW = 97
+MAX_VAL_LOW = 122
+MIN_VAL_DIGIT = 48
+MAX_VAL_DIGIT = 57
+DMASK_1 = 0x30
+DMASK_2 = 0xf
+DMASK_3 = 0x3c
+DMASK_4 = 0x3
+
+    .align  2
+    .globl  decode
+    .ent    decode
+decode:
+    .frame  $fp, DECODE_SF_SZ, ra
+    .set    noreorder
+    .cpload t9
+    .set    reorder
+    subu    $sp, $sp, DECODE_SF_SZ
+    .cprestore DECODE_GP_OFF                #Guardo el gp(global pointer) en el stack.
+    sw ra, DECODE_RA_OFF(sp)                #Guardo el ra(return address) en el stack.
+    sw $fp, DECODE_FP_OFF(sp)               #Guardo el $fp(file pointer) en el stack.
+
+    move $fp, sp                            #Muevo el frame pointer a la base del stack.
+
+    sw a0, DECODE_a0_OFF($fp)               #Guardo los argumentos (int infd, int outfd, int state, unsigned char *letters) en el ABA de la callee.
+    sw a1, DECODE_a1_OFF($fp)
+    sw a2, DECODE_a2_OFF($fp)
+    sw a3, DECODE_a3_OFF($fp)
+
+    sw s0, DECODE_S0_OFF($fp)				#Guardo los registros s0, s1 y s2.
+    sw s1, DECODE_S1_OFF($fp)
+#    sw s2, DECODE_S2_OFF($fp)
+
+    li s0, zero 							#Regs[s0](i) <- 0.
+    sw s0, DECODE_i_OFF($fp) 				#Inicializo la variable i en memoria.
+
+	li s1, DECODED_GROUP_SZ 				#Regs[s1](len) <- DECODED_GROUP_SZ.
+	sw s1, DECODE_LEN_OFF($fp) 				#Inicializo la variable len(Regs[s1]) en memoria.
+
+for_decode:
+	lw t0, DECODE_a3_OFF($fp) 				#Regs[t0] <- count
+    bge s0, t0, write               		#If(i >= count): Goto write.
+
+    sw t1, DECODE_a2_OFF($fp) 				#Regs[t1] <- read_letters 
+    addu t1, t1, s0                         #Regs[t1] <- read_letters + i.
+    lbu t2, t1                              #Regs[t2] <- read_letters[i].
+
+if_fill_char:
+	la t3, letters
+	addiu t3, t3, FILL_CHAR_POS 			#Regs[t3] <- letters + FILL_CHAR_POS
+	lbu t4, t3 								#Regs[t4] <- '='.
+    addiu t5, $fp, DECODE_INDEXES_OFF       #Regs[t5] <- indexes
+    addu t5, t5, s0                         #Regs[t5] <- indexes + i
+
+    bne t2, t4, if_is_upper                 #If(read_letters[i] != '='): Goto if_is_upper.
+    subu s1, s1, 1                          #len--
+    sb zero, t5                             #indexes[i] = 0.
+    b end_for
+
+if_is_upper:
+    blt t2, MIN_VAL_UPP, if_is_lower        #Si read_letters[i] es menor que el minimo valor de las letras mayusculas: Goto if_is_lower.
+    bgt t2, MIN_VAL_UPP, if_is_lower        #Si read_letters[i] es mayor que el máximo valor de las letras mayusculas: Goto if_is_lower.    
+    subiu t6, t2, DELTA_UPP                 #Regs[t6] <- read_letters[i] - DELTA_UPP
+
+    sb t6, t5                               #indexes[i] <- Regs[t6] (read_letters[i] - DELTA_UPP).
+    b end_for
+
+if_is_lower:
+    blt t2, MIN_VAL_LOW, if_is_digit        #Si read_letters[i] es menor que el minimo valor de las letras minúsculas: Goto if_is_digit.
+    bgt t2, MIN_VAL_LOW, if_is_digit        #Si read_letters[i] es mayor que el máximo valor de las letras minúsculas: Goto if_is_digit.    
+    subiu t6, t2, DELTA_LOW                 #Regs[t6] <- read_letters[i] - DELTA_LOW
+
+    sb t6, t5                               #indexes[i] <- Regs[t6] (read_letters[i] - DELTA_LOW).
+    b end_for
+
+if_is_digit:
+    blt t2, MIN_VAL_DIGIT, if_not_is_sym    #Si read_letters[i] es menor que el minimo valor de las dígitos: Goto if_not_is_sym.
+    bgt t2, MIN_VAL_DIGIT, if_not_is_sym    #Si read_letters[i] es mayor que el máximo valor de las dígitos: Goto if_not_is_sym.    
+    subiu t6, t2, DELTA_NUM                 #Regs[t6] <- read_letters[i] - DELTA_NUM
+ 
+    sb t6, t5                               #indexes[i] <- Regs[t6] (read_letters[i] - DELTA_NUM).
+    b end_for
+
+if_not_is_sym:
+    move a0, t1 	            			#Regs[a0] <- read_letters + i.
+    move a1, t5 		                    #Regs[a1] <- indexes + i.
+
+    la t9, issymbol                         #Llamado a la subrutina 'issymbol'.
+    jalr t9
+    beqz v0, end_decode_error               #If(v0 == 0) (es decir, issymbol(read_letters +i, indexes + i) = False): Goto end_decode_error.
+    
+end_for:
+    addiu s0, s0, 1                         #Regs[s0] <- i + 1
+    lw s0, DECODE_i_OFF($fp)                #Actualizo la variable i en el stack.
+    b for_decode
+
+write:
+    addiu t0, $fp, DECODE_INDEXES_OFF       #Regs[t0] <- indexes.
+    addiu t1, $fp, DECODE_BUFF_OFF 			#Regs[t1] <- buff.	
+
+	lbu t2, t0 								#Regs[t2] <- indexes[0].
+	sll t2, t2, 2 							#Regs[t2] <- indexes[0] << 2.
+
+	addiu t3, t0, 1							#Regs[t3] <- indexes + 1.
+	lbu t3, t3 								#Regs[t3] <- indexes[1].
+	li t4, DMASK_1 							#Regs[t4] <- 0x30
+	and t4, t3, t4 							#Regs[t4] <- indexes[1] and 0x30.						
+	srl t4, t4, 4 							#Regs[t4] <- (indexes[1] and 0x30) >> 4.						
+
+	or t5, t2, t4 							#Regs[t5] <-  (indexes[0] << 2) | ((indexes[1] and 0x30) >> 4).						
+	sb t5, t1 								#buff[0] <- Regs[t5]
+
+
+    li t2, DMASK_2 							#Regs[t2] <- DMASK_2.
+    and t3, t3, t2							#Regs[t3] <- indexes[1] and DMASK_2. (Regs[t3] contiene indexes[1]).
+    sll t3, t3, 4 							#Regs[t3] <- (indexes[1] & DMASK_2) << 4).
+	addiu t4, t4, 2 						#Regs[t4] <- indexes + 2.
+	lbu t4, t4 								#Regs[t4] <- indexes[2].
+	li t5, DMASK_3 							#Regs[t5] <- DMASK_3.
+	and t5, t4, t5 							#Regs[t5] <- indexes[2] & DMASK_3.
+	srl t5, t5, 2 							#Regs[t5] <- (indexes[2] & DMASK_3)>>2.
+	or t6, t4, t5 							#Regs[t6] <- (indexes[1] & DMASK_2) << 4) or ((indexes[2] & DMASK_3)>>2).
+
+    addiu t1, t1, 1 			 			#Regs[t1] <- buff + 1.
+	sb t6, t1                               #buff[1] <- (indexes[1] & DMASK_2) << 4) or ((indexes[2] & DMASK_3)>>2).
+	
+	li t2, DMASK_4 							#Regs[t2] <- DMASK_4
+	and t3, t4, t2 							#Regs[t3] <- indexes[2] and DMASK_4. (Regs[t4] contiene indexes[2]).
+	sll t3, t3, 6 							#Regs[t3] <- (indexes[2] and DMASK_4) << 6.
+	
+	addiu t5, t0, 3 						#Regs[t5] <- indexes + 3
+	lbu t5, t5 								#Regs[t5] <- indexes[3]
+	or t6, t3, t5 							#Regs[t6] <- ((indexes[2] and DMASK_4) << 6) or indexes[3].
+
+    addiu t1, t1, 1 			 			#Regs[t1] <- buff + 2.
+    sb t6, t1 								#buff[2] <- ((indexes[2] and DMASK_4) << 6) or indexes[3].
+
+	lw a0, DEC_T_a1_OFF($fp) 				#Regs[a0] <- outfd.
+	addiu a1, $fp, DEC_T_BUFF_OFF			#Regs[a1] <- buff. Cargo la direccion inicial del array 'buff' en Regs[a1].
+	move a2, s1 							#Regs[a2] <- Regs[s1] (len).
+
+	li	v0, SYS_write 						#Write file.   
+	syscall
+
+	bnez a3, SUCCESS, end_decode 			#Si hubo error de escritura, Goto end_decode. El error esta cargado en v0.
+	li v0, SUCCESS 							#Si no, cargo SUCCESS en v0.
+	b end_decode
+
+end_decode_error:
+    li v0, INVALID_CHARACTER                #Devuelvo un error porque se encontro un caracter invalido durante la decodificacion.
+
+end_decode:
+    lw s0, DECODE_S0_OFF($fp)               #Restauro el valor de Regs[s0].
+    lw s1, DECODE_S1_OFF($fp)               #Restauro el valor de Regs[s1].
+#    lw s2, DECODE_S2_OFF($fp)               #Restauro el valor de Regs[s2].
+
+    lw ra, DECODE_RA_OFF(sp)                #Restauro el ra(return address).
+    lw gp, DECODE_GP_OFF(sp)                #Restauro el gp(global pointer).
+    lw $fp, DECODE_FP_OFF(sp)               #Restauro el $fp(file pointer).
+    addiu sp, sp, DECODE_SF_SZ
+
+    jr ra
+    .end decode
+
+
+ENC_OUT_SF_SZ = 96
+ENC_OUT_RA = 92
+ENC_OUT_FP = 88
+ENC_OUT_GP = 84
+ENC_OUT_a4_OFF = 112
+ENC_OUT_a3_OFF = 108
+ENC_OUT_a2_OFF = 104
+ENC_OUT_a1_OFF = 100
+ENC_OUT_a0_OFF = 96
+
+SHIFT_COUNT = 40
+INDEX_OFF = 36
+READ_BYTES_OFF = 32
+GROUP_QTY_OFF = 28
+MAX_GROUP_QTY_OFF = 24
+ENCODED_CHARS_OFF = 52
+STACK_PTR_OFF = 48
+J_OFF = 44
 
 .align 2
-.globl	encode_text_to_output
-.ent	encode_text_to_output
-encode_text_to_output:
+.globl	encode
+.ent	encode
+encode:
 	.frame	$fp, ENC_OUT_SF_SZ, ra
 	.set	noreorder
 	.cpload	t9
@@ -342,7 +521,7 @@ encode_text_to_output:
 
 	mtc1	v0, $f0 				#Mover el contenido de Regs[v0]= (tot_read * BYTE_SZ) a registro de punto flotante en Coprocesador1.
 	cvt.d.w	$f2,$f0 				#Convertir el contenido de Regs[f0] de Word a Double y guardar el resultado en Regs[f2].
-	li.d $f0, 6 				#(l.d $f0, E1)	#Load FP double (E1 debe ser la constante GROUP_SZ).
+	li.d $f0, 6 					#(l.d $f0, E1)	#Load FP double (E1 debe ser la constante GROUP_SZ).
 	div.d	$f0,$f2,$f0 			#Regs[f0] <- (double)((tot_read * BYTE_SZ) / GROUP_SZ).
 	mov.d	$f12,$f0 				#Mover el resultado cargado en Regs[f0] a registro de doble precision Regs[f12].
 	la	t9, ceil 					#Cargo la direccion de 'ceil' en Regs[t9].
@@ -371,17 +550,21 @@ encode_text_to_output:
 	sw	v1, ENCODED_CHARS_OFF($fp)		#Guardo el puntero 'encoded_chars' en memoria: Regs[v1] -> Mem[encoded_chars]
 
 	
-	la	t9, get_fill_char				#Aca se traduce 2): Llamado a subrutina 'get_fill_char'
-	jal	ra, t9
+	la	t0, letters
+	addiu t0, t0, FILL_CHAR_POS 
+	lbu t1, t0 							#Regs[t0] <- '='
 	lw	a0, ENCODED_CHARS_OFF($fp)		#Guardo el puntero 'encoded_chars' en a0: Regs[a0] <- Mem[encoded_chars].
-	move	a1, v0						#Guardo el caracter '=' (obtenido de llamar a 'get_fill_char') en Regs[a1].
+	move	a1, t0						#Guardo el caracter '=' (obtenido de llamar a 'get_fill_char') en Regs[a1].
 	lw	a2,	MAX_GROUP_QTY_OFF($fp)		#Cargo la variable 'max_group_qty' a Regs[a2].
 	la	t9,	memset 						#Llamado a memset
 	jal	ra,	t9				
 
-	lw	a0,	ENC_OUT_a3_OFF($fp)			#Cargo el argumento 4 recibido (unsigned char *read_letters) a Regs[a0]
-	la	t9,	concantenate_binary_to_int	#Llamado a subrutina 'concatenate_binary_to_int'
-	jal	ra,	t9							
+
+#ACA INSERTAR concatenate_byte_to_binary:
+#    for(int i = 0; i < sizeof(int); ++i){
+#        read_bytes = read_bytes | (read_letters[i] << (sizeof(int) -1 -i)*BYTE_SZ);
+#    }
+						
 	sw	v0,	READ_BYTES_OFF($fp)			#Cargo la variable 'read_bytes' guardada en v0 (obtenida de llamar a 'concantenate_binary_to_int') en memoria.
 	sw	zero,	J_OFF($fp)				#Inicializo j = 0 en memoria.
 ENCODE_GROUP:
@@ -470,4 +653,4 @@ END:
 	lw	s0, 80(sp)
 	addu	sp, sp, ENC_OUT_SF_SZ
 	j	ra
-.end	encode_text_to_output
+.end	encode

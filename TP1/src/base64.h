@@ -11,22 +11,16 @@ decodifica los leido desde infd en base64
 y lo escribe en el file descriptor outfd*/
 int base64_decode(int infd, int outfd);
 
-extern char get_fill_char();
+//extern int concantenate_binary_to_int(unsigned char *characters);
 
-extern char encode(unsigned int letter_index);
+//extern int issymbol(unsigned char *c, char *index);
 
-extern int concantenate_binary_to_int(unsigned char *characters);
+//extern int encode(int infd, int outfd, unsigned char *read_letters, int tot_read);
 
-extern int issymbol(unsigned char *c, char *index);
-
-extern int decode_to_output_file(int infd,int outfd, int state, char *letter_indexes, int padding);
-
-extern int encode_text_to_output(int infd,int outfd, int state, unsigned char *read_letters, int tot_read);
-
-//extern int decode(int infd, int outfd, int state, unsigned char *letters, char fill_character, int count);
+//extern int decode(int infd, int outfd, unsigned char *letters, int count);
 
 //extern int decode_text(int infd, int outfd);
 
-//extern int encode_text(int infd, int outfd);
+extern int encode_text(int infd, int outfd);
 
 #endif //BASE64_H

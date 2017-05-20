@@ -99,12 +99,14 @@ int main(int argc, char* argv[]){
 		show_version();
 		return exit; //show and quit
 	}
-	if (input) //si hay input, lo abro
+	if (input){ //si hay input, lo abro
 		fd_input = open(input_file, O_RDONLY); //obtengo el fd	de input (sólo lectura)	
-	if (output)
-		fd_output = open(output_file, O_RDWR|O_CREAT, S_IRWXU); //obtengo el fd	(podría leer y escribir)
-												//chequear si tercer campo hace falta
-	
+	}	
+	if (output){
+		fd_output = open(output_file, O_WRONLY|O_CREAT, S_IRWXU); //obtengo el fd	(podría leer y escribir)
+																//chequear si tercer campo hace falta
+		
+	}
 	if (fd_output == -1 || fd_input == -1){ //
 		printf("Falla en apertura de archivos. Intente nuevamente. \n");
 		return errno;

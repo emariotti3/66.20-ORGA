@@ -9,8 +9,7 @@ VALGRIND-V = $(VALGRIND) -v
 
 all: $(EXEC)
 
-
-base64.o: base64.c base64.h base64.S
+base64.o: base64.c base64.h
 	$(CC) $(CFLAGS) -c base64.c -o base64.o
 
 $(EXEC): $(OBJECTS)
