@@ -117,10 +117,10 @@ issymbol:
 .end issymbol
 
 
-DECODE_a3_OFF = 60
-DECODE_a2_OFF = 56
-DECODE_a1_OFF = 52
-DECODE_a0_OFF = 48
+DECODE_a3_OFF = 68
+DECODE_a2_OFF = 64
+DECODE_a1_OFF = 60
+DECODE_a0_OFF = 56
 DECODE_SF_SZ = 56
 
 DECODE_S0_OFF = 48
@@ -134,18 +134,18 @@ DECODE_INDEXES_OFF = 24
 DECODE_LEN_OFF = 20
 DECODE_i_OFF = 16
 
-DELTA_UPP = 65
-DELTA_LOW = 71
-DELTA_NUM = 4
 ENCODED_GROUP_SZ = 4
 DECODED_GROUP_SZ = 3
 INVALID_CHARACTER = 1
-MIN_VAL_UPP = 65
-MAX_VAL_UPP = 90
-MIN_VAL_LOW = 97
-MAX_VAL_LOW = 122
-MIN_VAL_DIGIT = 48
-MAX_VAL_DIGIT = 57
+DELTA_UPP = 0x41
+DELTA_LOW = 0x47
+DELTA_NUM = 0x4
+MIN_VAL_UPP = 0x41
+MAX_VAL_UPP = 0x5A
+MIN_VAL_LOW = 0x61
+MAX_VAL_LOW = 0x7A
+MIN_VAL_DIGIT = 0x30
+MAX_VAL_DIGIT = 0x39
 DMASK_1 = 0x30
 DMASK_2 = 0xf
 DMASK_3 = 0x3c
@@ -166,12 +166,12 @@ decode:
 
     move $fp, sp                            #Muevo el frame pointer a la base del stack.
 
-    sw a0, DECODE_a0_OFF($fp)               #Guardo los argumentos (int infd, int outfd, int state, unsigned char *letters) en el ABA de la callee.
+    sw a0, DECODE_a0_OFF($fp)               #Guardo los argumentos (int infd, int outfd, unsigned char *read_letters, int count) en el ABA de la callee.
     sw a1, DECODE_a1_OFF($fp)
     sw a2, DECODE_a2_OFF($fp)
     sw a3, DECODE_a3_OFF($fp)
 
-    sw s0, DECODE_S0_OFF($fp)				#Guardo los registros s0, s1 y s2.
+    sw s0, DECODE_S0_OFF($fp)				#Guardo los registros s0 y s1.
     sw s1, DECODE_S1_OFF($fp)
 
     move s0, zero 							#Regs[s0](i) <- 0.
@@ -181,19 +181,21 @@ decode:
 	sw s1, DECODE_LEN_OFF($fp) 				#Inicializo la variable len(Regs[s1]) en memoria.
 
 for_decode:
+    lw s0, DECODE_i_OFF($fp)                #Cargo el vlalor de i desde el stack.
 	lw t0, DECODE_a3_OFF($fp) 				#Regs[t0] <- count
     bge s0, t0, write               		#If(i >= count): Goto write.
 
-    sw t1, DECODE_a2_OFF($fp) 				#Regs[t1] <- read_letters 
-    addu t1, t1, s0                         #Regs[t1] <- read_letters + i.
-    lbu t2, 0(t1)                           #Regs[t2] <- read_letters[i].
+    lw t1, DECODE_a2_OFF($fp) 				#Regs[t1] <- read_letters.  
+    addu t1, s0, t1 						#Regs[t1] <- read_letters + i.
+    lbu t2, (t1)  		                 	#Regs[t2] <- read_letters[i].
 
 if_fill_char:
-	la t3, letters
-	addiu t3, t3, FILL_CHAR_POS 			#Regs[t3] <- letters + FILL_CHAR_POS
-	lbu t4, 0(t3) 								#Regs[t4] <- '='.
-    addiu t5, $fp, DECODE_INDEXES_OFF       #Regs[t5] <- indexes
-    addu t5, t5, s0                         #Regs[t5] <- indexes + i
+
+	la t3, letters + FILL_CHAR_POS 			#Regs[t3] <- letters + FILL_CHAR_POS 			
+	lbu t4, 0(t3) 							#Regs[t4] <- '='.
+    				
+    addu t5, $fp, DECODE_INDEXES_OFF		#Regs[t5] <- indexes         
+    addu t5, s0, t5							#Regs[t5] <- indexes + i
 
     bne t2, t4, if_is_upper                 #If(read_letters[i] != '='): Goto if_is_upper.
     subu s1, s1, 1                          #len--
@@ -202,7 +204,7 @@ if_fill_char:
 
 if_is_upper:
     blt t2, MIN_VAL_UPP, if_is_lower        #Si read_letters[i] es menor que el minimo valor de las letras mayusculas: Goto if_is_lower.
-    bgt t2, MIN_VAL_UPP, if_is_lower        #Si read_letters[i] es mayor que el máximo valor de las letras mayusculas: Goto if_is_lower.    
+    bgt t2, MAX_VAL_UPP, if_is_lower        #Si read_letters[i] es mayor que el máximo valor de las letras mayusculas: Goto if_is_lower.    
     subu t6, t2, DELTA_UPP                  #Regs[t6] <- read_letters[i] - DELTA_UPP
 
     sb t6, 0(t5)                            #indexes[i] <- Regs[t6] (read_letters[i] - DELTA_UPP).
@@ -210,7 +212,7 @@ if_is_upper:
 
 if_is_lower:
     blt t2, MIN_VAL_LOW, if_is_digit        #Si read_letters[i] es menor que el minimo valor de las letras minúsculas: Goto if_is_digit.
-    bgt t2, MIN_VAL_LOW, if_is_digit        #Si read_letters[i] es mayor que el máximo valor de las letras minúsculas: Goto if_is_digit.    
+    bgt t2, MAX_VAL_LOW, if_is_digit        #Si read_letters[i] es mayor que el máximo valor de las letras minúsculas: Goto if_is_digit.    
     subu t6, t2, DELTA_LOW                  #Regs[t6] <- read_letters[i] - DELTA_LOW
 
     sb t6, 0(t5)                            #indexes[i] <- Regs[t6] (read_letters[i] - DELTA_LOW).
@@ -218,7 +220,7 @@ if_is_lower:
 
 if_is_digit:
     blt t2, MIN_VAL_DIGIT, if_not_is_sym    #Si read_letters[i] es menor que el minimo valor de las dígitos: Goto if_not_is_sym.
-    bgt t2, MIN_VAL_DIGIT, if_not_is_sym    #Si read_letters[i] es mayor que el máximo valor de las dígitos: Goto if_not_is_sym.    
+    bgt t2, MAX_VAL_DIGIT, if_not_is_sym    #Si read_letters[i] es mayor que el máximo valor de las dígitos: Goto if_not_is_sym.    
     subu t6, t2, DELTA_NUM                  #Regs[t6] <- read_letters[i] - DELTA_NUM
  
     sb t6, 0(t5)                            #indexes[i] <- Regs[t6] (read_letters[i] - DELTA_NUM).
@@ -234,7 +236,7 @@ if_not_is_sym:
     
 end_for:
     addiu s0, s0, 1                         #Regs[s0] <- i + 1
-    lw s0, DECODE_i_OFF($fp)                #Actualizo la variable i en el stack.
+    sw s0, DECODE_i_OFF($fp)                #Actualizo la variable i en el stack.
     b for_decode
 
 write:
@@ -257,12 +259,12 @@ write:
     li t2, DMASK_2 							#Regs[t2] <- DMASK_2.
     and t3, t3, t2							#Regs[t3] <- indexes[1] and DMASK_2. (Regs[t3] contiene indexes[1]).
     sll t3, t3, 4 							#Regs[t3] <- (indexes[1] & DMASK_2) << 4).
-	addiu t4, t4, 2 						#Regs[t4] <- indexes + 2.
+	addiu t4, t0, 2 						#Regs[t4] <- indexes + 2.
 	lbu t4, 0(t4) 							#Regs[t4] <- indexes[2].
 	li t5, DMASK_3 							#Regs[t5] <- DMASK_3.
 	and t5, t4, t5 							#Regs[t5] <- indexes[2] & DMASK_3.
 	srl t5, t5, 2 							#Regs[t5] <- (indexes[2] & DMASK_3)>>2.
-	or t6, t4, t5 							#Regs[t6] <- (indexes[1] & DMASK_2) << 4) or ((indexes[2] & DMASK_3)>>2).
+	or t6, t3, t5 							#Regs[t6] <- (indexes[1] & DMASK_2) << 4) or ((indexes[2] & DMASK_3)>>2).
 
     addiu t1, t1, 1 			 			#Regs[t1] <- buff + 1.
 	sb t6, 0(t1)                            #buff[1] <- (indexes[1] & DMASK_2) << 4) or ((indexes[2] & DMASK_3)>>2).
